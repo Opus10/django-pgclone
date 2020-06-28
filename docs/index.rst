@@ -23,10 +23,10 @@ There are three main subcommands provided by the
 ``manage.py pgclone`` management command:
 
 1. ``manage.py pgclone dump``: Dumps a compressed version of the
-   instance's database to ``settings.DBCOPY_STORAGE_LOCATION``. The dump
+   instance's database to ``settings.PGCLONE_STORAGE_LOCATION``. The dump
    key is in the format ``{database_name}/{timestamp}.{config_name}.dump``
 2. ``manage.py pgclone ls``: Lists all dumped database copies under
-   ``settings.DBCOPY_STORAGE_LOCATION``. To list a single database, do
+   ``settings.PGCLONE_STORAGE_LOCATION``. To list a single database, do
    ``manage.py pgclone ls <database_name>``. To list all available
    databases do ``manage.py pgclone ls --only-db-names``.
 3. ``manage.py pgclone restore <dump_key or db_name>``: Restores the
