@@ -1,4 +1,8 @@
 # Changelog
+## 1.0.1 (2020-06-28)
+### Trivial
+  - Fixed minor documentation typos [Wes Kendall, 68cb863]
+
 ## 1.0.0 (2020-06-28)
 ### Api-Break
   - Initial release of django-pgclone [Wes Kendall, b8419ce]
