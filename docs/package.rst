@@ -1,0 +1,5 @@
+Package
+-------
+
+.. automodule:: pgclone
+    :members:
