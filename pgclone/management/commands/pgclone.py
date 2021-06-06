@@ -41,7 +41,7 @@ class SubCommands(BaseCommand):
         command_name = options['subcommand']
         self.subcommands.get(command_name)
         if command_name not in self.subcommands:  # pragma: no cover
-            raise ValueError('unknown subcommand: %' % command_name)
+            raise ValueError(f'unknown subcommand: {command_name}')
         command_class = self.subcommands[command_name]
 
         if len(self.argv):  # pragma: no cover

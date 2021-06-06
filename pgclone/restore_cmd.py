@@ -139,7 +139,7 @@ def _remote_restore(db_name_or_dump_key, *, temp_db, conn_db):
     storage_location = settings.get_storage_location()
     file_path = os.path.join(storage_location, dump_key)
 
-    print_msg(f'Creating the temporary restore db')
+    print_msg('Creating the temporary restore db')
     _drop_db(temp_db)
     create_temp_sql = f'CREATE DATABASE "{temp_db["NAME"]}"'
     command.run_psql(create_temp_sql, db=conn_db)

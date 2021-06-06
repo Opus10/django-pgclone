@@ -78,8 +78,6 @@ def ls(db_name=None, only_db_names=False, local=False):
         ]
 
     if only_db_names:
-        return sorted(
-            list({dump_key.split('/', 1)[0] for dump_key in dump_keys})
-        )
+        return sorted({dump_key.split('/', 1)[0] for dump_key in dump_keys})
     else:
         return sorted(dump_keys, reverse=True)
