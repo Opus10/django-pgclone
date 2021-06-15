@@ -12,7 +12,7 @@ name = "django-pgclone"
 packages = [
   { include = "pgclone" }
 ]
-version = "1.0.1"
+version = "1.0.2"
 description = "Dump and restore Postgres databases with Django."
 authors = ["Wes Kendall", "Ethan O'Brien"]
 classifiers = [
