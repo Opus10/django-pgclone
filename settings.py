@@ -13,3 +13,5 @@ INSTALLED_APPS = [
 ]
 # Database url comes from the DATABASE_URL env var
 DATABASES = pgconnection.configure({'default': dj_database_url.config()})
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'

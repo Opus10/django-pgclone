@@ -17,17 +17,13 @@ class SubCommands(BaseCommand):
     subcommands = {}
 
     def add_arguments(self, parser):
-        subparsers = parser.add_subparsers(
-            dest='subcommand', title='subcommands', description=''
-        )
+        subparsers = parser.add_subparsers(dest='subcommand', title='subcommands', description='')
         subparsers.required = True
 
         for command_name, command_class in self.subcommands.items():
             command = command_class()
 
-            subparser = subparsers.add_parser(
-                command_name, help=command_class.help
-            )
+            subparser = subparsers.add_parser(command_name, help=command_class.help)
             command.add_arguments(subparser)
 
             command_parser = command.create_parser('manage.py', 'pgclone')
@@ -62,10 +58,7 @@ class DumpCommand(BaseCommand):
             '-c',
             '--dump-config',
             dest='dump_config_name',
-            help=(
-                'The dump configuration name from'
-                ' settings.PGCLONE_DUMP_CONFIGS'
-            ),
+            help=('The dump configuration name from' ' settings.PGCLONE_DUMP_CONFIGS'),
         )
 
     def handle(self, *args, **options):
@@ -79,17 +72,13 @@ class DumpCommand(BaseCommand):
 
 class LsCommand(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument(
-            'db_name', nargs='?', help='The database name to list'
-        )
+        parser.add_argument('db_name', nargs='?', help='The database name to list')
         parser.add_argument(
             '--only-db-names',
             action='store_true',
             help='Only list database names',
         )
-        parser.add_argument(
-            '--local', action='store_true', help='Only list local restore keys'
-        )
+        parser.add_argument('--local', action='store_true', help='Only list local restore keys')
 
     def handle(self, *args, **options):
         results = ls(
@@ -121,10 +110,7 @@ class RestoreCommand(BaseCommand):
             '-c',
             '--restore-config',
             dest='restore_config_name',
-            help=(
-                'The restore configuration name from'
-                ' settings.PGCLONE_RESTORE_CONFIGS'
-            ),
+            help=('The restore configuration name from' ' settings.PGCLONE_RESTORE_CONFIGS'),
         )
         parser.add_argument(
             '--reversible',
