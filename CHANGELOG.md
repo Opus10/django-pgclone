@@ -1,5 +1,9 @@
 # Changelog
-## 1.0.2 (2021-06-14)
+## 1.0.3 (2022-07-31)
+### Trivial
+  - Updated with latest Django template, fixing doc builds [Wes Kendall, 32a5eea]
+
+## 1.0.2 (2021-06-15)
 ### Trivial
   - Updated to latest Django template [Wes Kendall, cf4deaf]
 
