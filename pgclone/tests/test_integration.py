@@ -28,9 +28,7 @@ def test_simple_dump_ls_restore(tmpdir, capsys, settings):
     call_command('pgclone', 'dump')
 
     call_command('pgclone', 'ls')
-    assert capsys.readouterr().out == (
-        f'{db_name}/2020_07_01_00_00_00_000000.default.dump\n'
-    )
+    assert capsys.readouterr().out == (f'{db_name}/2020_07_01_00_00_00_000000.default.dump\n')
 
     ddf.G('auth.User')
     assert User.objects.count() == 2
@@ -87,9 +85,7 @@ def test_reversible_dump_ls_restore(tmpdir, capsys, settings):
     call_command('pgclone', 'dump')
 
     call_command('pgclone', 'ls')
-    assert capsys.readouterr().out == (
-        f'{db_name}/2020_07_01_00_00_00_000000.default.dump\n'
-    )
+    assert capsys.readouterr().out == (f'{db_name}/2020_07_01_00_00_00_000000.default.dump\n')
 
     call_command('pgclone', 'ls', '--only-db-names')
     assert capsys.readouterr().out == f'{db_name}\n'

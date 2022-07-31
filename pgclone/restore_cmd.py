@@ -26,9 +26,7 @@ def _db_exists(db):
     conn_db = database.make_config('postgres')
     db_url = database.get_url(conn_db)
     try:
-        command.run_shell(
-            f'psql {db_url} -lqt | cut -d \\| -f 1 | grep -qw {db["NAME"]}'
-        )
+        command.run_shell(f'psql {db_url} -lqt | cut -d \\| -f 1 | grep -qw {db["NAME"]}')
         return True
     except RuntimeError:
         return False
@@ -47,9 +45,7 @@ def _get_restore_config(restore_config_name):
             ' in settings.PGCLONE_RESTORE_CONFIGS.'
         )
 
-    return _make_restore_config(
-        **settings.get_restore_configs()[restore_config_name]
-    )
+    return _make_restore_config(**settings.get_restore_configs()[restore_config_name])
 
 
 def _kill_connections_to_database(db):
@@ -84,9 +80,7 @@ def _set_search_path(db, conn_db):
         cursor.execute('SHOW search_path;')
         search_path = cursor.fetchone()[0]
 
-    set_search_path_sql = (
-        f'ALTER DATABASE "{db["NAME"]}"' f' SET search_path to {search_path}'
-    )
+    set_search_path_sql = f'ALTER DATABASE "{db["NAME"]}"' f' SET search_path to {search_path}'
     command.run_psql(set_search_path_sql, db=conn_db)
 
 
@@ -132,8 +126,7 @@ def _remote_restore(db_name_or_dump_key, *, temp_db, conn_db):
         dump_key = get_latest_dump_key(db_name_or_dump_key)
         if not dump_key:
             raise RuntimeError(
-                'Could not find a dump for database name'
-                f' "{db_name_or_dump_key}"'
+                'Could not find a dump for database name' f' "{db_name_or_dump_key}"'
             )
 
     storage_location = settings.get_storage_location()
@@ -147,8 +140,7 @@ def _remote_restore(db_name_or_dump_key, *, temp_db, conn_db):
 
     print_msg(f'Running pg_restore on "{dump_key}"')
     pg_restore_cmd = (
-        'pg_restore --verbose --no-acl --no-owner '
-        f'-d \'{database.get_url(temp_db)}\''
+        'pg_restore --verbose --no-acl --no-owner ' f'-d \'{database.get_url(temp_db)}\''
     )
 
     # When restoring, we need to ignore errors because there are certain
@@ -156,9 +148,7 @@ def _remote_restore(db_name_or_dump_key, *, temp_db, conn_db):
     # In the future, we may parse the output of the pg_restore command to see
     # if an unexpected error happened.
     if storage_location.startswith('s3://'):  # pragma: no cover
-        command.run_shell(
-            f'aws s3 cp {file_path} - | {pg_restore_cmd}', ignore_errors=True
-        )
+        command.run_shell(f'aws s3 cp {file_path} - | {pg_restore_cmd}', ignore_errors=True)
     else:
         command.run_shell(f'{pg_restore_cmd} {file_path}', ignore_errors=True)
 
@@ -195,9 +185,7 @@ def restore(
         raise RuntimeError('Restore not allowed')
 
     if restore_config_name and pre_swap_hooks:  # pragma: no cover
-        raise ValueError(
-            'Cannot pass in pre_swap_hooks when using a restore config'
-        )
+        raise ValueError('Cannot pass in pre_swap_hooks when using a restore config')
     elif pre_swap_hooks:
         restore_config_name = '_custom'
         restore_config = _make_restore_config(pre_swap_hooks=pre_swap_hooks)
@@ -236,9 +224,7 @@ def restore(
             prev_db=prev_db,
         )
     else:
-        dump_key = _remote_restore(
-            db_name_or_dump_key, temp_db=temp_db, conn_db=conn_db
-        )
+        dump_key = _remote_restore(db_name_or_dump_key, temp_db=temp_db, conn_db=conn_db)
 
     # When in reversible mode, make a special __curr db snapshot.
     # Avoid this if we are restoring the current db
@@ -255,9 +241,7 @@ def restore(
     # pre-swap hook step
     with pgconnection.route(temp_db):
         for management_command_name in restore_config['pre_swap_hooks']:
-            print_msg(
-                f'Running "manage.py {management_command_name}" pre_swap hook'
-            )
+            print_msg(f'Running "manage.py {management_command_name}" pre_swap hook')
             command.run_management(management_command_name)
 
     # swap step

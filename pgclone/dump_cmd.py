@@ -61,8 +61,7 @@ def dump(exclude_models=None, dump_config_name=None, pre_dump_hooks=None):
 
     if dump_config_name and (exclude_models or pre_dump_hooks):
         raise ValueError(
-            'Cannot pass in exclude_models or pre_dump_hooks when using a'
-            ' dump config'
+            'Cannot pass in exclude_models or pre_dump_hooks when using a' ' dump config'
         )
     elif exclude_models or pre_dump_hooks:
         dump_config_name = '_custom'
@@ -74,12 +73,8 @@ def dump(exclude_models=None, dump_config_name=None, pre_dump_hooks=None):
         dump_config = _get_dump_config(dump_config_name)
 
     # pre-dump hooks
-    for management_command_name in dump_config[
-        'pre_dump_hooks'
-    ]:  # pragma: no cover
-        print_msg(
-            f'Running "manage.py {management_command_name}" pre_dump hook'
-        )
+    for management_command_name in dump_config['pre_dump_hooks']:  # pragma: no cover
+        print_msg(f'Running "manage.py {management_command_name}" pre_dump hook')
         command.run_management(management_command_name)
 
     # Run the pg dump command that streams to the storage location
@@ -88,17 +83,13 @@ def dump(exclude_models=None, dump_config_name=None, pre_dump_hooks=None):
     file_path = os.path.join(storage_location, dump_key)
 
     exclude_models = dump_config.get('exclude_models', [])
-    exclude_tables = [
-        apps.get_model(model)._meta.db_table for model in exclude_models
-    ]
+    exclude_tables = [apps.get_model(model)._meta.db_table for model in exclude_models]
     exclude_args = ' '.join(
         [f'--exclude-table-data={table_name}' for table_name in exclude_tables]
     )
     # Note - do note format {db_dump_url} with an `f` string.
     # It will be formatted later when running the command
-    pg_dump_cmd_fmt = (
-        'pg_dump -Fc --no-acl --no-owner {db_dump_url} ' + exclude_args
-    )
+    pg_dump_cmd_fmt = 'pg_dump -Fc --no-acl --no-owner {db_dump_url} ' + exclude_args
 
     if file_path.startswith('s3://'):  # pragma: no cover
         pg_dump_cmd_fmt += f' | aws s3 cp - {file_path}'
@@ -109,9 +100,7 @@ def dump(exclude_models=None, dump_config_name=None, pre_dump_hooks=None):
     anon_pg_dump_cmd = pg_dump_cmd_fmt.format(db_dump_url='<DB_URL>')
     print_msg(f'Creating DB copy with cmd: {anon_pg_dump_cmd}')
 
-    pg_dump_cmd = pg_dump_cmd_fmt.format(
-        db_dump_url=database.get_url(default_db)
-    )
+    pg_dump_cmd = pg_dump_cmd_fmt.format(db_dump_url=database.get_url(default_db))
     command.run_shell(pg_dump_cmd)
 
     print_msg(f'DB successfully dumped to "{dump_key}"')
