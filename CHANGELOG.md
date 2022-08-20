@@ -1,4 +1,8 @@
 # Changelog
+## 1.0.5 (2022-08-20)
+### Trivial
+  - Updated with latest Django template [Wes Kendall, 5ab9ddd]
+
 ## 1.0.4 (2022-08-20)
 ### Trivial
   - Fix release note rendering and don't package tests [Wes Kendall, 5621de7]
