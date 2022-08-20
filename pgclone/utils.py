@@ -10,7 +10,7 @@ def print_msg(msg):
     commands.
     """
     logger = logging.get_logger()
-    logger.info('\033[32m' + msg + '\033[0m')
+    logger.info("\033[32m" + msg + "\033[0m")
 
 
 def is_valid_dump_key(dump_key):
@@ -19,7 +19,7 @@ def is_valid_dump_key(dump_key):
     "database_name/timestamp.dump"
     """
     regexmatch = re.match(
-        r'^[\w-]+/\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}_\d+\.\w+\.dump$',
+        r"^[\w-]+/\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}_\d+\.\w+\.dump$",
         dump_key,
     )
     return regexmatch
