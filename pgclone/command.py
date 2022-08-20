@@ -15,14 +15,14 @@ def run_shell(cmd, ignore_errors=False):
     """
     logger = logging.get_logger()
     process = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-    for line in iter(process.stdout.readline, b''):
-        logger.info(line.decode('utf-8').rstrip())
+    for line in iter(process.stdout.readline, b""):
+        logger.info(line.decode("utf-8").rstrip())
     process.wait()
 
     if process.returncode and not ignore_errors:
         # Dont print the command since it might contain
         # sensitive information
-        raise RuntimeError('Error running command.')
+        raise RuntimeError("Error running command.")
 
     return process
 
@@ -51,5 +51,5 @@ def run_psql(sql, *, db, ignore_errors=False):
     db_url = database.get_url(db)
 
     # Format special SQL characters
-    sql = sql.replace('$', '\\$').replace('\n', ' ').replace('"', '\\"').strip()
+    sql = sql.replace("$", "\\$").replace("\n", " ").replace('"', '\\"').strip()
     return run_shell(f'psql {db_url} -P pager=off -c "{sql};"', ignore_errors=ignore_errors)

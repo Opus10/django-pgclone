@@ -5,7 +5,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.black]
 line-length = 99
 target-version = ['py37']
-skip-string-normalization = true
 
 [tool.coverage.run]
 branch = true
@@ -26,6 +25,9 @@ fail_under = 100
 name = "django-pgclone"
 packages = [
   { include = "pgclone" }
+]
+exclude = [
+  "*/tests/"
 ]
 version = "1.0.3"
 description = "Dump and restore Postgres databases with Django."
@@ -64,6 +66,7 @@ flake8-import-order = "0.18.1"
 flake8-logging-format = "0.6.0"
 flake8-mutable = "1.2.0"
 git-tidy = "1.1.2"
+myst-parser = "0.18.0"
 packaging = ">=19.2"
 pip = "*"
 pre-commit = "2.13.0"
@@ -75,7 +78,7 @@ pytest-django = "4.5.2"
 requests = "2.25.1"
 Sphinx = "4.4.0"
 sphinx-rtd-theme = "1.0.0"
-temple = "*"
+footing = "*"
 django-dynamic-fixture = "3.1.1"
 freezegun = "0.3.15"
 tox = "3.24.5"

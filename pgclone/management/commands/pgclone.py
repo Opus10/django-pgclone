@@ -17,7 +17,7 @@ class SubCommands(BaseCommand):
     subcommands = {}
 
     def add_arguments(self, parser):
-        subparsers = parser.add_subparsers(dest='subcommand', title='subcommands', description='')
+        subparsers = parser.add_subparsers(dest="subcommand", title="subcommands", description="")
         subparsers.required = True
 
         for command_name, command_class in self.subcommands.items():
@@ -26,7 +26,7 @@ class SubCommands(BaseCommand):
             subparser = subparsers.add_parser(command_name, help=command_class.help)
             command.add_arguments(subparser)
 
-            command_parser = command.create_parser('manage.py', 'pgclone')
+            command_parser = command.create_parser("manage.py", "pgclone")
             subparser._actions = command_parser._actions
 
     def run_from_argv(self, argv):  # pragma: no cover
@@ -34,10 +34,10 @@ class SubCommands(BaseCommand):
         return super().run_from_argv(argv)
 
     def handle(self, *args, **options):
-        command_name = options['subcommand']
+        command_name = options["subcommand"]
         self.subcommands.get(command_name)
         if command_name not in self.subcommands:  # pragma: no cover
-            raise ValueError(f'unknown subcommand: {command_name}')
+            raise ValueError(f"unknown subcommand: {command_name}")
         command_class = self.subcommands[command_name]
 
         if len(self.argv):  # pragma: no cover
@@ -49,42 +49,42 @@ class SubCommands(BaseCommand):
 class DumpCommand(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
-            '--exclude-model',
-            nargs='*',
-            dest='exclude_models',
-            help='Model(s) you wish to exclude when dumping',
+            "--exclude-model",
+            nargs="*",
+            dest="exclude_models",
+            help="Model(s) you wish to exclude when dumping",
         )
         parser.add_argument(
-            '-c',
-            '--dump-config',
-            dest='dump_config_name',
-            help=('The dump configuration name from' ' settings.PGCLONE_DUMP_CONFIGS'),
+            "-c",
+            "--dump-config",
+            dest="dump_config_name",
+            help=("The dump configuration name from" " settings.PGCLONE_DUMP_CONFIGS"),
         )
 
     def handle(self, *args, **options):
         logger = logging.new_stdout_logger()
         with logging.set_logger(logger):
             dump(
-                exclude_models=options['exclude_models'],
-                dump_config_name=options['dump_config_name'],
+                exclude_models=options["exclude_models"],
+                dump_config_name=options["dump_config_name"],
             )
 
 
 class LsCommand(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument('db_name', nargs='?', help='The database name to list')
+        parser.add_argument("db_name", nargs="?", help="The database name to list")
         parser.add_argument(
-            '--only-db-names',
-            action='store_true',
-            help='Only list database names',
+            "--only-db-names",
+            action="store_true",
+            help="Only list database names",
         )
-        parser.add_argument('--local', action='store_true', help='Only list local restore keys')
+        parser.add_argument("--local", action="store_true", help="Only list local restore keys")
 
     def handle(self, *args, **options):
         results = ls(
-            db_name=options['db_name'],
-            only_db_names=options['only_db_names'],
-            local=options['local'],
+            db_name=options["db_name"],
+            only_db_names=options["only_db_names"],
+            local=options["local"],
         )
         for dump_name in results:
             print(dump_name)
@@ -93,32 +93,32 @@ class LsCommand(BaseCommand):
 class RestoreCommand(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
-            'db_name_or_dump_key',
-            help='The database name or dump key to restore',
+            "db_name_or_dump_key",
+            help="The database name or dump key to restore",
         )
         parser.add_argument(
-            '--pre-swap-hook',
-            nargs='*',
-            dest='pre_swap_hooks',
+            "--pre-swap-hook",
+            nargs="*",
+            dest="pre_swap_hooks",
             help=(
-                'Management command(s) that should be executed on'
-                ' the restored database before it is swapped to the'
-                ' primary database.'
+                "Management command(s) that should be executed on"
+                " the restored database before it is swapped to the"
+                " primary database."
             ),
         )
         parser.add_argument(
-            '-c',
-            '--restore-config',
-            dest='restore_config_name',
-            help=('The restore configuration name from' ' settings.PGCLONE_RESTORE_CONFIGS'),
+            "-c",
+            "--restore-config",
+            dest="restore_config_name",
+            help=("The restore configuration name from" " settings.PGCLONE_RESTORE_CONFIGS"),
         )
         parser.add_argument(
-            '--reversible',
-            dest='reversible',
-            action='store_true',
+            "--reversible",
+            dest="reversible",
+            action="store_true",
             help=(
-                'Create 2 extra local databases for quicker future '
-                'restoration at the cost of a longer initial restore.'
+                "Create 2 extra local databases for quicker future "
+                "restoration at the cost of a longer initial restore."
             ),
         )
 
@@ -126,16 +126,16 @@ class RestoreCommand(BaseCommand):
         logger = logging.new_stdout_logger()
         with logging.set_logger(logger):
             restore(
-                options['db_name_or_dump_key'],
-                pre_swap_hooks=options['pre_swap_hooks'],
-                restore_config_name=options['restore_config_name'],
-                reversible=options['reversible'],
+                options["db_name_or_dump_key"],
+                pre_swap_hooks=options["pre_swap_hooks"],
+                restore_config_name=options["restore_config_name"],
+                reversible=options["reversible"],
             )
 
 
 class Command(SubCommands):
     subcommands = {
-        'dump': DumpCommand,
-        'ls': LsCommand,
-        'restore': RestoreCommand,
+        "dump": DumpCommand,
+        "ls": LsCommand,
+        "restore": RestoreCommand,
     }

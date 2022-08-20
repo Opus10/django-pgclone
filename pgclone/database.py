@@ -5,7 +5,7 @@ from django.conf import settings
 
 def get_default_config():
     # Deep copy to ensure the caller doesn't modify this django setting
-    return copy.deepcopy(settings.DATABASES['default'])
+    return copy.deepcopy(settings.DATABASES["default"])
 
 
 def make_config(db_name):
@@ -16,14 +16,14 @@ def make_config(db_name):
     databases used by pgclone collide with any that already exist.
     """
     for db in settings.DATABASES.values():
-        if db.get('NAME') == db_name:  # pragma: no cover
+        if db.get("NAME") == db_name:  # pragma: no cover
             raise RuntimeError(
                 f'pgclone cannot use temporary database named "{db_name}"'
-                ' since it is already configured in settings.DATABASES.'
+                " since it is already configured in settings.DATABASES."
             )
 
     db_config = get_default_config()
-    db_config['NAME'] = db_name
+    db_config["NAME"] = db_name
     return db_config
 
 
