@@ -1,4 +1,14 @@
 # Changelog
+## 1.1.0 (2022-08-20)
+### Feature
+  - Removed dependency on ``django-pgconnection`` [Wes Kendall, 5047031]
+
+    The routing functionality of ``django-pgconnection`` was replaced by
+    Django's built-in execution hooks.
+
+    Users no longer have to wrap ``settings.DATABASES`` with
+    ``django-pgconnection``.
+
 ## 1.0.5 (2022-08-20)
 ### Trivial
   - Updated with latest Django template [Wes Kendall, 5ab9ddd]
