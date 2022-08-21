@@ -80,9 +80,7 @@ database at the following specific points in time:
    the scenes on a temporary database. When the restore is complete, any
    pre-swap hooks are executed on the temporary database. The final swap
    happens when all hooks have successfully finished. Pre-swap hooks will
-   automatically have their database commands executed on the temporary
-   database using connection routing capabilities from
-   `django-pgconnection <https://django-pgconnection.readthedocs.io>`__.
+   run on the temporary database.
    By default, the ``migrate`` command is performed as a pre-swap hook
    during restore. Users can do
    ``manage.py pgclone restore --pre-swap-hook migrate --pre-swap-hook other_manage_command``
