@@ -1,15 +1,13 @@
 import os
 
 from django.db import connection
-import pgconnection
 
 from pgclone import command
 from pgclone import database
 from pgclone import exceptions
 from pgclone import ls
 from pgclone import settings
-from pgclone.utils import is_valid_dump_key
-from pgclone.utils import print_msg
+from pgclone.utils import is_valid_dump_key, print_msg, route
 
 
 def get_latest_dump_key(db_name):
@@ -80,7 +78,7 @@ def _set_search_path(db, conn_db):
         cursor.execute("SHOW search_path;")
         search_path = cursor.fetchone()[0]
 
-    set_search_path_sql = f'ALTER DATABASE "{db["NAME"]}"' f" SET search_path to {search_path}"
+    set_search_path_sql = f'ALTER DATABASE "{db["NAME"]}" SET search_path to {search_path}'
     command.run_psql(set_search_path_sql, db=conn_db)
 
 
@@ -125,9 +123,7 @@ def _remote_restore(db_name_or_dump_key, *, temp_db, conn_db):
     if not is_valid_dump_key(dump_key):
         dump_key = get_latest_dump_key(db_name_or_dump_key)
         if not dump_key:
-            raise RuntimeError(
-                "Could not find a dump for database name" f' "{db_name_or_dump_key}"'
-            )
+            raise RuntimeError(f'Could not find a dump for database name "{db_name_or_dump_key}"')
 
     storage_location = settings.get_storage_location()
     file_path = os.path.join(storage_location, dump_key)
@@ -139,9 +135,7 @@ def _remote_restore(db_name_or_dump_key, *, temp_db, conn_db):
     _set_search_path(temp_db, conn_db)
 
     print_msg(f'Running pg_restore on "{dump_key}"')
-    pg_restore_cmd = (
-        "pg_restore --verbose --no-acl --no-owner " f"-d '{database.get_url(temp_db)}'"
-    )
+    pg_restore_cmd = f"pg_restore --verbose --no-acl --no-owner -d '{database.get_url(temp_db)}'"
 
     # When restoring, we need to ignore errors because there are certain
     # errors we cannot get around when pg restoring some DBs (like Aurora).
@@ -239,7 +233,7 @@ def restore(
         command.run_psql(create_current_db_sql, db=conn_db)
 
     # pre-swap hook step
-    with pgconnection.route(temp_db):
+    with route(temp_db):
         for management_command_name in restore_config["pre_swap_hooks"]:
             print_msg(f'Running "manage.py {management_command_name}" pre_swap hook')
             command.run_management(management_command_name)
@@ -256,6 +250,7 @@ def restore(
     # this, so just ignore errors on this command
     command.run_psql(alter_db_sql, db=conn_db, ignore_errors=True)
 
+    _kill_connections_to_database(temp_db)
     rename_sql = f"""
         ALTER DATABASE "{temp_db["NAME"]}"
         RENAME TO "{default_db["NAME"]}"

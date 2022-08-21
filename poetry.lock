@@ -252,18 +252,6 @@ python-versions = "*"
 six = "*"
 
 [[package]]
-name = "django-pgconnection"
-version = "1.0.3"
-description = "Route postgres connections and hook into cursor execution"
-category = "main"
-optional = false
-python-versions = ">=3.7.0,<4"
-
-[package.dependencies]
-django = ">=2"
-importlib_metadata = {version = ">=4", markers = "python_version >= \"3.7\" and python_version < \"3.8\""}
-
-[[package]]
 name = "docutils"
 version = "0.17.1"
 description = "Docutils -- Python Documentation Utilities"
@@ -356,7 +344,7 @@ flake8 = "*"
 
 [[package]]
 name = "footing"
-version = "0.1.3"
+version = "0.1.4"
 description = "Keep templated projects in sync with their template"
 category = "dev"
 optional = false
@@ -373,7 +361,7 @@ tldextract = ">=3.1.2"
 
 [[package]]
 name = "formaldict"
-version = "1.0.4"
+version = "1.0.5"
 description = "Formal structured dictionaries parsed from a schema"
 category = "dev"
 optional = false
@@ -1205,7 +1193,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.0,<4"
-content-hash = "af1dc49bfabf32600d7657df1a589c0d82fb1fd2e5736e9b66f37472071ba744"
+content-hash = "7258908788d0c48f4c0e660da9f6e954fd7910ad64402c9e929d9658f1db5f90"
 
 [metadata.files]
 alabaster = [
@@ -1252,7 +1240,6 @@ django = []
 django-dynamic-fixture = [
     {file = "django-dynamic-fixture-3.1.1.tar.gz", hash = "sha256:90d9d68ec373dce97a4a9ba3ec6a39cf10918e9c222fdf231074cfb668d14ea2"},
 ]
-django-pgconnection = []
 docutils = [
     {file = "docutils-0.17.1-py2.py3-none-any.whl", hash = "sha256:cf316c8370a737a022b72b56874f6602acf974a37a9fba42ec2876387549fc61"},
     {file = "docutils-0.17.1.tar.gz", hash = "sha256:686577d2e4c32380bb50cbb22f575ed742d58168cee37e99117a854bcd88f125"},
