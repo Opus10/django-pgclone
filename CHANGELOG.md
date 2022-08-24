@@ -1,4 +1,9 @@
 # Changelog
+## 2.0.1 (2022-08-24)
+### Trivial
+  - Update with latest Django template [Wes Kendall, c46d7e4]
+  - Fix ReadTheDocs builds [Wes Kendall, 7c74338]
+
 ## 2.0.0 (2022-08-24)
 ### Api-Break
   - Upgrade configuration hierarchy, add multi-db support, and change dump key format [Wes Kendall, 5edeeb8]
