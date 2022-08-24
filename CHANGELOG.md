@@ -1,4 +1,12 @@
 # Changelog
+## 2.1.0 (2022-08-24)
+### Bug
+  - Allow "reversible" to proliferate through settings and configs. [Wes Kendall, bda7b69]
+
+    The ``pgclone restore`` command was setting ``reversible`` to
+    ``False``, negating settings or configs that overrode it. This
+    has been fixed.
+
 ## 2.0.1 (2022-08-24)
 ### Trivial
   - Update with latest Django template [Wes Kendall, c46d7e4]

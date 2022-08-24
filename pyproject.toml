@@ -29,7 +29,7 @@ packages = [
 exclude = [
   "*/tests/"
 ]
-version = "2.0.1"
+version = "2.1.0"
 description = "Dump and restore Postgres databases with Django."
 authors = ["Wes Kendall", "Ethan O'Brien"]
 classifiers = [
