@@ -152,6 +152,7 @@ class RestoreCommand(BaseSubcommand):
         parser.add_argument(
             "-r",
             "--reversible",
+            default=None,  # Use None so that configs/settings can be used as defaults
             action="store_true",
             help="Keep current and previous database copies available for reversion.",
         )
