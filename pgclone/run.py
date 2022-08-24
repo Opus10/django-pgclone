@@ -1,20 +1,27 @@
 import contextlib
 import io
+import os
 import subprocess
 
 from django.core.management import call_command
 
-from . import database
-from . import logging
+from pgclone import db, exceptions, logging
 
 
-def run_shell(cmd, ignore_errors=False):
+def shell(cmd, ignore_errors=False, env=None):
     """
     Utility for running a command. Ensures that an error
     is raised if it fails.
     """
+    env = env or {}
     logger = logging.get_logger()
-    process = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+    process = subprocess.Popen(
+        cmd,
+        shell=True,
+        stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE,
+        env=dict(os.environ, **env),
+    )
     for line in iter(process.stdout.readline, b""):
         logger.info(line.decode("utf-8").rstrip())
     process.wait()
@@ -22,12 +29,12 @@ def run_shell(cmd, ignore_errors=False):
     if process.returncode and not ignore_errors:
         # Dont print the command since it might contain
         # sensitive information
-        raise RuntimeError("Error running command.")
+        raise exceptions.RuntimeError("Error running command.")
 
     return process
 
 
-def run_management(cmd, *cmd_args, **cmd_kwargs):
+def management(cmd, *cmd_args, **cmd_kwargs):
     logger = logging.get_logger()
     cmd_args = cmd_args or []
     cmd_kwargs = cmd_kwargs or {}
@@ -46,10 +53,10 @@ def run_management(cmd, *cmd_args, **cmd_kwargs):
         logger.info(output.getvalue())
 
 
-def run_psql(sql, *, db, ignore_errors=False):
+def psql(sql, *, using, ignore_errors=False):
     """Runs psql -c with properly formatted SQL"""
-    db_url = database.get_url(db)
+    db_url = db.url(db.conn(using=using))
 
     # Format special SQL characters
     sql = sql.replace("$", "\\$").replace("\n", " ").replace('"', '\\"').strip()
-    return run_shell(f'psql {db_url} -P pager=off -c "{sql};"', ignore_errors=ignore_errors)
+    return shell(f'psql {db_url} -P pager=off -c "{sql};"', ignore_errors=ignore_errors)

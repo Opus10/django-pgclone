@@ -5,7 +5,10 @@ from django.db import connection
 import freezegun
 import pytest
 
-import pgclone.exceptions
+
+@pytest.fixture(autouse=True)
+def patch_gethostname(mocker):
+    mocker.patch("socket.gethostname", return_value="dev", autospec=True)
 
 
 @freezegun.freeze_time("2020-07-01")
@@ -15,25 +18,25 @@ def test_simple_dump_ls_restore(tmpdir, capsys, settings):
     Tests a simple dump, ls, and restore, asserting that a user
     created after a dump is deleted upon restore
     """
-    db_name = settings.DATABASES["default"]["NAME"]
     settings.PGCLONE_STORAGE_LOCATION = tmpdir.strpath
 
     call_command("pgclone", "ls")
     assert capsys.readouterr().out == ""
 
-    with pytest.raises(RuntimeError):
-        call_command("pgclone", "restore", db_name)
+    with pytest.raises(SystemExit):
+        call_command("pgclone", "restore", "dev/default/none/")
+    assert capsys.readouterr().err.startswith("Could not find a dump key matching prefix")
 
     ddf.G("auth.User")
     call_command("pgclone", "dump")
 
     call_command("pgclone", "ls")
-    assert capsys.readouterr().out == (f"{db_name}/2020_07_01_00_00_00_000000.default.dump\n")
+    assert capsys.readouterr().out == ("dev/default/none/2020-07-01-00-00-00-000000.dump\n")
 
     ddf.G("auth.User")
     assert User.objects.count() == 2
 
-    call_command("pgclone", "restore", db_name)
+    call_command("pgclone", "restore", "dev/default/none")
 
     connection.connect()
     assert User.objects.count() == 1
@@ -41,42 +44,45 @@ def test_simple_dump_ls_restore(tmpdir, capsys, settings):
     call_command(
         "pgclone",
         "restore",
-        f"{db_name}/2020_07_01_00_00_00_000000.default.dump",
+        "dev/default/none/2020-07-01-00-00-00-000000.dump",
     )
 
     connection.connect()
     assert User.objects.count() == 1
 
     # Do some basic error assertions
-    with pytest.raises(pgclone.exceptions.ConfigurationError):
-        call_command("pgclone", "dump", "-c bad_config_name")
+    capsys.readouterr()
+    with pytest.raises(SystemExit):
+        call_command("pgclone", "dump", "--config", "bad_config_name")
+    assert capsys.readouterr().err.startswith('"bad_config_name" is not a valid')
 
-    with pytest.raises(pgclone.exceptions.ConfigurationError):
-        call_command("pgclone", "restore", db_name, "-c bad_config_name")
+    with pytest.raises(SystemExit):
+        call_command("pgclone", "restore")
+    assert capsys.readouterr().err.startswith("Must provide a dump key")
 
     # Try restoring with custom swap hooks
-    call_command("pgclone", "restore", db_name, "--pre-swap-hook", "migrate")
+    call_command("pgclone", "restore", "dev", "--pre-swap-hook", "migrate")
     connection.connect()
     assert User.objects.count() == 1
 
     # Dump and restore while ignoring the user table
     with freezegun.freeze_time("2020-07-02"):
-        call_command("pgclone", "dump", "--exclude-model", "auth.User")
+        call_command("pgclone", "dump", "--exclude", "auth.User")
         assert User.objects.count() == 1
 
-        call_command("pgclone", "restore", db_name)
+        call_command("pgclone", "restore", "dev/default/none/")
         connection.connect()
         assert not User.objects.exists()
 
 
 @freezegun.freeze_time("2020-07-01")
 @pytest.mark.django_db(transaction=True)
-def test_reversible_dump_ls_restore(tmpdir, capsys, settings):
+def test_reversible_dump_ls_restore(tmpdir, capsys, settings, mocker):
     """
     Tests a reversible dump, ls, and restore for local clones
     """
-    db_name = settings.DATABASES["default"]["NAME"]
     settings.PGCLONE_STORAGE_LOCATION = tmpdir.strpath
+    db_name = settings.DATABASES["default"]["NAME"]
 
     call_command("pgclone", "ls")
     assert capsys.readouterr().out == ""
@@ -85,15 +91,25 @@ def test_reversible_dump_ls_restore(tmpdir, capsys, settings):
     call_command("pgclone", "dump")
 
     call_command("pgclone", "ls")
-    assert capsys.readouterr().out == (f"{db_name}/2020_07_01_00_00_00_000000.default.dump\n")
+    assert capsys.readouterr().out == ("dev/default/none/2020-07-01-00-00-00-000000.dump\n")
 
-    call_command("pgclone", "ls", "--only-db-names")
-    assert capsys.readouterr().out == f"{db_name}\n"
+    with pytest.raises(SystemExit):
+        call_command("pgclone", "ls", "--instances", "--databases")
+    assert capsys.readouterr().err.startswith("Can only use one of")
+
+    call_command("pgclone", "ls", "--instances")
+    assert capsys.readouterr().out == "dev\n"
+
+    call_command("pgclone", "ls", "--configs")
+    assert capsys.readouterr().out == "none\n"
+
+    call_command("pgclone", "ls", "--databases")
+    assert capsys.readouterr().out == "default\n"
 
     ddf.G("auth.User")
     assert User.objects.count() == 2
 
-    call_command("pgclone", "restore", db_name, "--reversible")
+    call_command("pgclone", "restore", "dev", "--reversible")
 
     connection.connect()
     assert User.objects.count() == 1
@@ -132,10 +148,13 @@ def test_reversible_dump_ls_restore(tmpdir, capsys, settings):
     connection.connect()
     assert User.objects.count() == 3
 
-    # Since we didn't resotre with "reversible", there are no longer
+    # Since we didn't restore with "reversible", there are no longer
     # current and previous copies
-    with pytest.raises(RuntimeError, match="does not exist"):
+    assert capsys.readouterr()
+    with pytest.raises(SystemExit):
         call_command("pgclone", "restore", ":previous")
+    assert capsys.readouterr().err.startswith("Local database")
 
-    with pytest.raises(RuntimeError, match="does not exist"):
+    with pytest.raises(SystemExit):
         call_command("pgclone", "restore", ":current")
+    assert capsys.readouterr().err.startswith("Local database")

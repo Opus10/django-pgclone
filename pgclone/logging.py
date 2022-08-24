@@ -5,6 +5,8 @@ import time
 
 from django.core.cache import caches
 
+from pgclone import exceptions
+
 _logger = threading.local()
 
 
@@ -66,10 +68,19 @@ def set_logger(logger):
     global _logger
 
     if hasattr(_logger, "value"):  # pragma: no cover
-        raise RuntimeError("Global logger has already been set")
+        raise exceptions.RuntimeError("Global logger has already been set")
 
     _logger.value = logger
     try:
         yield
     finally:
         delattr(_logger, "value")
+
+
+def success_msg(msg):
+    """
+    Interface for printing a message to the user. Uses logging
+    so that we can turn it off when not running in management
+    commands.
+    """
+    get_logger().info("\033[32m" + msg + "\033[0m")

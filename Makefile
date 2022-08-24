@@ -19,6 +19,7 @@ OS = $(shell uname -s)
 PACKAGE_NAME=django-pgclone
 MODULE_NAME=pgclone
 SHELL=bash
+DATABASE_URL?=postgres://postgres:postgres@db:5432/postgres
 
 ifeq (${OS}, Linux)
 	DOCKER_CMD?=sudo docker
