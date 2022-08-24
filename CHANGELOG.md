@@ -1,5 +1,20 @@
 # Changelog
-## 1.1.0 (2022-08-20)
+## 2.0.0 (2022-08-24)
+### Api-Break
+  - Upgrade configuration hierarchy, add multi-db support, and change dump key format [Wes Kendall, 5edeeb8]
+
+    ``django-pgclone`` has ``settings.PGCLONE_CONFIGS`` to support re-usable command
+    options. Dump keys were changed to capture the config and also contain a configurable
+    database instance to better distinguish different databases.
+
+    Multi-database setups are fully supported.
+
+    Docs were revamped and overview all settings and configuration possibilities.
+
+    Instructions for migrating to version 2 are in the "Frequently Asked Questions" section of
+    the docs.
+
+## 1.1.0 (2022-08-21)
 ### Feature
   - Removed dependency on ``django-pgconnection`` [Wes Kendall, 5047031]
 
