@@ -6,6 +6,15 @@ Table of Contents
 
    index
    installation
+   basics
+   commands
+   storage
+   hooks
+   reversible
+   configurations
+   settings
+   rds
    package
+   faq
    release_notes
    contributing

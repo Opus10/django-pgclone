@@ -1,5 +1,5 @@
-Package
--------
+API Reference
+-------------
 
 .. automodule:: pgclone
     :members:

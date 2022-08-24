@@ -1,27 +1,35 @@
 import pytest
 
-from pgclone import exceptions
 from pgclone import settings as pgclone_settings
 
 
-def test_validate(settings):
-    """
-    Verifies that settings are validated appropriately
-    """
-    settings.PGCLONE_DUMP_CONFIGS = {"default": {"exclude_models": []}}
-    settings.PGCLONE_RESTORE_CONFIGS = {"default": {"pre_swap_hooks": []}}
-    pgclone_settings.validate()
+def test_s3_config(settings):
+    delattr(settings, "PGCLONE_S3_CONFIG")
+    assert not pgclone_settings.s3_config()
+    settings.PGCLONE_S3_CONFIG = {"AWS_ACCESS_KEY_ID": "access_key"}
+    assert pgclone_settings.s3_config() == {"AWS_ACCESS_KEY_ID": "access_key"}
 
-    # A default dump config must be defined
-    settings.PGCLONE_DUMP_CONFIGS = {}
-    with pytest.raises(exceptions.ConfigurationError):
-        pgclone_settings.validate()
-    settings.PGCLONE_DUMP_CONFIGS = {"default": {"exclude_models": []}}
-    pgclone_settings.validate()
 
-    # A default restore config must be defined
-    settings.PGCLONE_RESTORE_CONFIGS = {}
-    with pytest.raises(exceptions.ConfigurationError):
-        pgclone_settings.validate()
-    settings.PGCLONE_RESTORE_CONFIGS = {"default": {"pre_swap_hooks": []}}
-    pgclone_settings.validate()
+def test_conn_db(settings):
+    delattr(settings, "PGCLONE_CONN_DB")
+    settings.DATABASES = {"default": {"NAME": "hello"}}
+
+    pgclone_settings.conn_db.cache_clear()
+    assert pgclone_settings.conn_db() == "postgres"
+
+    settings.DATABASES = {"default": {"NAME": "postgres"}}
+
+    # Verify the cache works...
+    assert pgclone_settings.conn_db() == "postgres"
+
+    pgclone_settings.conn_db.cache_clear()
+    assert pgclone_settings.conn_db() == "template1"
+
+    settings.DATABASES = {"default": {"NAME": "postgres"}, "other": {"NAME": "template1"}}
+    pgclone_settings.conn_db.cache_clear()
+    with pytest.raises(RuntimeError):
+        pgclone_settings.conn_db()
+
+    settings.PGCLONE_CONN_DB = "other"
+    pgclone_settings.conn_db.cache_clear()
+    assert pgclone_settings.conn_db() == "other"

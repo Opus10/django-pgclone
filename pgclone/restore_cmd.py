@@ -1,71 +1,37 @@
 import os
 
-from django.db import connection
+from django.db import connections
 
-from pgclone import command
-from pgclone import database
-from pgclone import exceptions
-from pgclone import ls
-from pgclone import settings
-from pgclone.utils import is_valid_dump_key, print_msg, route
+from pgclone import db, exceptions, logging, ls_cmd, options, run, settings, storage
 
 
-def get_latest_dump_key(db_name):
-    """
-    Given a database name, lists all of the dumps and finds the most
-    recent dump key.
-    """
-    sorted_dumps = sorted(ls(db_name=db_name))
-    return sorted_dumps[-1] if sorted_dumps else None
-
-
-def _db_exists(db):
+def _db_exists(database, *, using):
     """Returns True if the database exists"""
-    conn_db = database.make_config("postgres")
-    db_url = database.get_url(conn_db)
+    conn_db_url = db.url(db.conn(using=using))
     try:
-        command.run_shell(f'psql {db_url} -lqt | cut -d \\| -f 1 | grep -qw {db["NAME"]}')
+        run.shell(f'psql {conn_db_url} -lqt | cut -d \\| -f 1 | grep -qw {database["NAME"]}')
         return True
     except RuntimeError:
         return False
 
 
-def _make_restore_config(*, pre_swap_hooks=None):
-    """Make a pgclone restore config"""
-    return {"pre_swap_hooks": pre_swap_hooks or []}
-
-
-def _get_restore_config(restore_config_name):
-    """Get a pgclone restore config by its name"""
-    if restore_config_name not in settings.get_restore_configs():
-        raise exceptions.ConfigurationError(
-            f'"{restore_config_name}" is not a valid restore configuration'
-            " in settings.PGCLONE_RESTORE_CONFIGS."
-        )
-
-    return _make_restore_config(**settings.get_restore_configs()[restore_config_name])
-
-
-def _kill_connections_to_database(db):
-    conn_db = database.make_config("postgres")
-
+def _kill_connections_to_db(database, *, using):
     kill_connections_sql = f"""
         SELECT pg_terminate_backend(pg_stat_activity.pid)
         FROM pg_stat_activity
-        WHERE pg_stat_activity.datname = '{db["NAME"]}'
+        WHERE pg_stat_activity.datname = '{database["NAME"]}'
             AND pid <> pg_backend_pid()
     """
-    command.run_psql(kill_connections_sql, db=conn_db)
+    run.psql(kill_connections_sql, using=using)
 
 
-def _drop_db(db):
-    conn_db = database.make_config("postgres")
-    _kill_connections_to_database(db)
-    drop_sql = f'DROP DATABASE IF EXISTS "{db["NAME"]}"'
-    command.run_psql(drop_sql, db=conn_db)
+def _drop_db(database, *, using):
+    _kill_connections_to_db(database, using=using)
+    drop_sql = f'DROP DATABASE IF EXISTS "{database["NAME"]}"'
+    run.psql(drop_sql, using=using)
 
 
-def _set_search_path(db, conn_db):
+def _set_search_path(database, *, using):
     """
     pg_restore does not restore the original search_path variable of the
     database, which can cause issues with extensions. This function obtains
@@ -74,28 +40,28 @@ def _set_search_path(db, conn_db):
 
     https://www.postgresql.org/message-id/CAKFQuwbWpd1DXA_YY3zXRKGKKLL1ZTi9MHDQ15zJ8ufVBwVJEA%40mail.gmail.com
     """
-    with connection.cursor() as cursor:
+    with connections[using].cursor() as cursor:
         cursor.execute("SHOW search_path;")
         search_path = cursor.fetchone()[0]
 
-    set_search_path_sql = f'ALTER DATABASE "{db["NAME"]}" SET search_path to {search_path}'
-    command.run_psql(set_search_path_sql, db=conn_db)
+    set_search_path_sql = f'ALTER DATABASE "{database["NAME"]}" SET search_path to {search_path}'
+    run.psql(set_search_path_sql, using=using)
 
 
-def _local_restore(db_name_or_dump_key, *, conn_db, temp_db, curr_db, prev_db):
+def _local_restore(dump_key, *, temp_db, curr_db, prev_db, using):
     """
     Performs a restore using a local database
     """
-    if db_name_or_dump_key == ":current":
+    if dump_key == ":current":
         local_restore_db = curr_db
-    elif db_name_or_dump_key == ":previous":
+    elif dump_key == ":previous":
         local_restore_db = prev_db
     else:
-        local_restore_db = database.make_config(db_name_or_dump_key[1:])
+        local_restore_db = db.make(dump_key[1:], using=using)
 
-    if not _db_exists(local_restore_db):
-        raise RuntimeError(
-            f'local database {local_restore_db["NAME"]} does not exist.'
+    if not _db_exists(local_restore_db, using=using):
+        raise exceptions.RuntimeError(
+            f'Local database "{local_restore_db["NAME"]}" does not exist.'
             ' Use "pgclone ls --local" to see local database keys.'
         )
 
@@ -103,165 +69,186 @@ def _local_restore(db_name_or_dump_key, *, conn_db, temp_db, curr_db, prev_db):
     # try to restore the temp_db, so do nothing if this database
     # is provided by the user
     if local_restore_db != temp_db:  # pragma: no branch
-        _drop_db(temp_db)
+        _drop_db(temp_db, using=using)
         create_temp_sql = f"""
             CREATE DATABASE {temp_db["NAME"]}
             TEMPLATE {local_restore_db["NAME"]}
         """
-        command.run_psql(create_temp_sql, db=conn_db)
+        run.psql(create_temp_sql, using=using)
 
-    _set_search_path(temp_db, conn_db)
+    _set_search_path(temp_db, using=using)
 
-    return db_name_or_dump_key
+    return dump_key
 
 
-def _remote_restore(db_name_or_dump_key, *, temp_db, conn_db):
+def _remote_restore(dump_key, *, temp_db, using, storage_location):
+    storage_client = storage.client(storage_location)
+
     # We are restoring from a remote dump. If the dump key is not valid,
     # assume it is the latest dump of a database name and get the latest
     # dump key
-    dump_key = db_name_or_dump_key
-    if not is_valid_dump_key(dump_key):
-        dump_key = get_latest_dump_key(db_name_or_dump_key)
-        if not dump_key:
-            raise RuntimeError(f'Could not find a dump for database name "{db_name_or_dump_key}"')
+    if not dump_key.endswith(".dump"):
+        sorted_dumps = sorted(ls_cmd.ls(dump_key=dump_key))
+        found_dump_key = sorted_dumps[-1] if sorted_dumps else None
 
-    storage_location = settings.get_storage_location()
+        if not found_dump_key:
+            raise exceptions.RuntimeError(
+                f'Could not find a dump key matching prefix "{dump_key}"'
+            )
+
+        dump_key = found_dump_key
+
     file_path = os.path.join(storage_location, dump_key)
 
-    print_msg("Creating the temporary restore db")
-    _drop_db(temp_db)
+    logging.success_msg("Creating the temporary restore db")
+    _drop_db(temp_db, using=using)
     create_temp_sql = f'CREATE DATABASE "{temp_db["NAME"]}"'
-    command.run_psql(create_temp_sql, db=conn_db)
-    _set_search_path(temp_db, conn_db)
+    run.psql(create_temp_sql, using=using)
+    _set_search_path(temp_db, using=using)
 
-    print_msg(f'Running pg_restore on "{dump_key}"')
-    pg_restore_cmd = f"pg_restore --verbose --no-acl --no-owner -d '{database.get_url(temp_db)}'"
+    logging.success_msg(f'Running pg_restore on "{dump_key}"')
+    pg_restore_cmd = f"pg_restore --verbose --no-acl --no-owner -d '{db.url(temp_db)}'"
+    pg_restore_cmd = storage_client.pg_restore(file_path) + " " + pg_restore_cmd
 
     # When restoring, we need to ignore errors because there are certain
     # errors we cannot get around when pg restoring some DBs (like Aurora).
     # In the future, we may parse the output of the pg_restore command to see
     # if an unexpected error happened.
-    if storage_location.startswith("s3://"):  # pragma: no cover
-        command.run_shell(f"aws s3 cp {file_path} - | {pg_restore_cmd}", ignore_errors=True)
-    else:
-        command.run_shell(f"{pg_restore_cmd} {file_path}", ignore_errors=True)
+    run.shell(pg_restore_cmd, env=storage_client.env, ignore_errors=True)
 
     return dump_key
 
 
-def restore(
-    db_name_or_dump_key,
-    pre_swap_hooks=None,
-    restore_config_name=None,
-    reversible=False,
-):
+def _restore(*, dump_key, pre_swap_hooks, config, reversible, database, storage_location):
     """
-    Restores a database dump
-
-    Args:
-        db_name_or_dump_key (str): When a database name
-            is provided, finds the most recent dump for that
-            database and restores it. Restores a specific dump
-            when a dump key is provided.
-        pre_swap_hooks (List[str], default=None): The list of pre_swap hooks to
-            run before swapping the temp restore database with the
-            main database. The strings are management command names.
-        restore_config_name (str, default=None): The name of the restore
-            config to use when running the restore. Configured
-            in settings.PGCLONE_RESTORE_CONFIGS
-
-    Returns:
-        str: The dump key that was restored.
+    Restore implementation
     """
-    settings.validate()
+    if not settings.allow_restore():  # pragma: no cover
+        raise exceptions.RuntimeError("Restore not allowed.")
 
-    if not settings.get_allow_restore():  # pragma: no cover
-        raise RuntimeError("Restore not allowed")
-
-    if restore_config_name and pre_swap_hooks:  # pragma: no cover
-        raise ValueError("Cannot pass in pre_swap_hooks when using a restore config")
-    elif pre_swap_hooks:
-        restore_config_name = "_custom"
-        restore_config = _make_restore_config(pre_swap_hooks=pre_swap_hooks)
-    else:
-        restore_config_name = restore_config_name or "default"
-        restore_config = _get_restore_config(restore_config_name)
+    if not dump_key:
+        raise exceptions.ValueError("Must provide a dump key or prefix to restore.")
 
     # Restore works in the following steps with the following databases:
     # 1. Create the temp_db database to perform the restore without
-    #    affecting the default_db
+    #    affecting the restore_db
     # 2. Call pg_restore on temp_db
     # 3. Apply any pre_swap_hooks to temp_db
-    # 4. Terminate all connections on default_db so that we
+    # 4. Terminate all connections on restore_db so that we
     #    can swap in the temp_db
-    # 4. Rename default_db to prev_db
-    # 5. Rename temp_db to default_db
+    # 4. Rename restore_db to prev_db
+    # 5. Rename temp_db to restore_db
     # 6. Delete prev_db
     #
-    # Database variable names below reflect this process. We use the
-    # "postgres" database (i.e. conn_db) as the connection database
-    # when using psql for most of these commands
+    # Database variable names below reflect this process.
 
-    default_db = database.get_default_config()
-    temp_db = database.make_config(default_db["NAME"] + "__temp")
-    prev_db = database.make_config(default_db["NAME"] + "__prev")
-    curr_db = database.make_config(default_db["NAME"] + "__curr")
-    conn_db = database.make_config("postgres")
+    restore_db = db.conf(using=database)
+    temp_db = db.make(restore_db["NAME"] + "__temp", using=database)
+    prev_db = db.make(restore_db["NAME"] + "__prev", using=database)
+    curr_db = db.make(restore_db["NAME"] + "__curr", using=database)
     local_restore_db = None
 
-    if db_name_or_dump_key.startswith(":"):
+    if dump_key.startswith(":"):
         dump_key = _local_restore(
-            db_name_or_dump_key,
-            conn_db=conn_db,
+            dump_key,
             temp_db=temp_db,
             curr_db=curr_db,
             prev_db=prev_db,
+            using=database,
         )
     else:
-        dump_key = _remote_restore(db_name_or_dump_key, temp_db=temp_db, conn_db=conn_db)
+        dump_key = _remote_restore(
+            dump_key, temp_db=temp_db, using=database, storage_location=storage_location
+        )
 
     # When in reversible mode, make a special __curr db snapshot.
     # Avoid this if we are restoring the current db
     if reversible and local_restore_db != curr_db:
-        print_msg("Creating snapshot for reversible restore")
-        _drop_db(curr_db)
+        logging.success_msg("Creating snapshot for reversible restore")
+        _drop_db(curr_db, using=database)
         create_current_db_sql = f"""
             CREATE DATABASE "{curr_db['NAME']}"
              WITH TEMPLATE
             "{temp_db['NAME']}"
         """
-        command.run_psql(create_current_db_sql, db=conn_db)
+        run.psql(create_current_db_sql, using=database)
 
     # pre-swap hook step
-    with route(temp_db):
-        for management_command_name in restore_config["pre_swap_hooks"]:
-            print_msg(f'Running "manage.py {management_command_name}" pre_swap hook')
-            command.run_management(management_command_name)
+    with db.route(temp_db):
+        for management_command_name in pre_swap_hooks:
+            logging.success_msg(f'Running "manage.py {management_command_name}" pre_swap hook')
+            run.management(management_command_name)
 
     # swap step
-    print_msg("Swapping the restored copy with the primary database")
-    _drop_db(prev_db)
-    _kill_connections_to_database(default_db)
+    logging.success_msg("Swapping the restored copy with the primary database")
+    _drop_db(prev_db, using=database)
+    _kill_connections_to_db(restore_db, using=database)
     alter_db_sql = f"""
-        ALTER DATABASE "{default_db['NAME']}" RENAME TO
+        ALTER DATABASE "{restore_db['NAME']}" RENAME TO
         "{prev_db['NAME']}"
     """
     # There's a scenario where the default DB may not exist before running
     # this, so just ignore errors on this command
-    command.run_psql(alter_db_sql, db=conn_db, ignore_errors=True)
+    run.psql(alter_db_sql, ignore_errors=True, using=database)
 
-    _kill_connections_to_database(temp_db)
+    _kill_connections_to_db(temp_db, using=database)
     rename_sql = f"""
         ALTER DATABASE "{temp_db["NAME"]}"
-        RENAME TO "{default_db["NAME"]}"
+        RENAME TO "{restore_db["NAME"]}"
     """
-    command.run_psql(rename_sql, db=conn_db)
+    run.psql(rename_sql, using=database)
 
     if not reversible:
-        print_msg("Cleaning old pgclone resources")
-        _drop_db(curr_db)
-        _drop_db(prev_db)
+        logging.success_msg("Cleaning old pgclone resources")
+        _drop_db(curr_db, using=database)
+        _drop_db(prev_db, using=database)
 
-    print_msg(f'Successfully restored dump "{dump_key}"')
+    logging.success_msg(f'Successfully restored dump "{dump_key}" to database "{database}"')
 
     return dump_key
+
+
+def restore(
+    dump_key=None,
+    *,
+    pre_swap_hooks=None,
+    reversible=None,
+    database=None,
+    storage_location=None,
+    config=None,
+):
+    """
+    Restores a database dump.
+
+    Args:
+        dump_key (str, default=None): Restores the specific dump key or the most
+            recent dump matching the prefix.
+        pre_swap_hooks (List[str], default=None): The list of pre-swap hooks to
+            run before swapping the temp restore database with the
+            main utils. The strings are management command names.
+        reversible (bool, default=None): True if the dump can be reversed.
+        database (str, default=None): The database to restore.
+        storage_location (str, default=None): The storage location to use for the restore.
+        config (str, default=None): The configuration name
+            from ``settings.PGCLONE_CONFIGS``.
+
+    Returns:
+        str: The dump key that was restored.
+    """
+    opts = options.get(
+        dump_key=dump_key,
+        pre_swap_hooks=pre_swap_hooks,
+        config=config,
+        reversible=reversible,
+        database=database,
+        storage_location=storage_location,
+    )
+
+    return _restore(
+        dump_key=opts.dump_key,
+        pre_swap_hooks=opts.pre_swap_hooks,
+        config=opts.config,
+        reversible=opts.reversible,
+        database=opts.database,
+        storage_location=opts.storage_location,
+    )

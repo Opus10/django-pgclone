@@ -1,51 +1,75 @@
+import functools
+import socket
+
 from django.conf import settings
+from django.db import DEFAULT_DB_ALIAS
 
-from . import exceptions
+from pgclone import exceptions
 
 
-def get_storage_location():
+def s3_config():
+    return getattr(settings, "PGCLONE_S3_CONFIG", {})
+
+
+def storage_location():
     location = getattr(settings, "PGCLONE_STORAGE_LOCATION", ".pgclone")
     if not location.endswith("/"):  # pragma: no cover
         location += "/"
     return location
 
 
-def get_allow_restore():
+def reversible():
+    return getattr(settings, "PGCLONE_REVERSIBLE", False)
+
+
+def allow_restore():
     return getattr(settings, "PGCLONE_ALLOW_RESTORE", True)
 
 
-def get_dump_configs():
-    return getattr(
-        settings,
-        "PGCLONE_DUMP_CONFIGS",
-        {"default": {"exclude_models": [], "pre_dump_hooks": []}},
-    )
+def configs():
+    return getattr(settings, "PGCLONE_CONFIGS", {})
 
 
-def get_restore_configs():
-    return getattr(
-        settings,
-        "PGCLONE_RESTORE_CONFIGS",
-        {"default": {"pre_swap_hooks": ["migrate"]}},
-    )
+def validate_dump_keys():
+    return getattr(settings, "PGCLONE_VALIDATE_DUMP_KEYS", True)
 
 
-def validate():
-    """Verify that pgclone settings are configured properly"""
-    dump_configs = get_dump_configs()
-    if not dump_configs.get("default"):
-        raise exceptions.ConfigurationError(
-            "You need to configure a default pgclone dump configuration"
-            " in settings.PGCLONE_DUMP_CONFIGS."
-            " See the docs at https://django-pgclone.readthedocs.io for more"
-            " information."
+def instance():
+    return getattr(settings, "PGCLONE_INSTANCE", socket.gethostname())
+
+
+def database():
+    return getattr(settings, "PGCLONE_DATABASE", DEFAULT_DB_ALIAS)
+
+
+def pre_dump_hooks():
+    return getattr(settings, "PGCLONE_PRE_DUMP_HOOKS", [])
+
+
+def pre_swap_hooks():
+    return getattr(settings, "PGCLONE_PRE_SWAP_HOOKS", ["migrate"])
+
+
+def exclude():
+    return getattr(settings, "PGCLONE_EXCLUDE", [])
+
+
+@functools.lru_cache()
+def conn_db():
+    conn_db = getattr(settings, "PGCLONE_CONN_DB", None)
+    db_names = [db.get("NAME") for db in settings.DATABASES.values()]
+
+    if not conn_db:
+        if "postgres" not in db_names:
+            conn_db = "postgres"
+        elif "template1" not in db_names:
+            conn_db = "template1"
+
+    if not conn_db or conn_db in db_names:
+        raise exceptions.RuntimeError(
+            "pgclone could not automatically determine a connection database."
+            " Configure settings.PGCLONE_CONN_DB with a database name that can"
+            " be used when running psql commands."
         )
 
-    restore_configs = get_restore_configs()
-    if not restore_configs.get("default"):
-        raise exceptions.ConfigurationError(
-            "You need to configure a default pgclone restore configuration"
-            " in settings.PGCLONE_RESTORE_CONFIGS."
-            " See the docs at https://django-pgclone.readthedocs.io for more"
-            " information."
-        )
+    return conn_db

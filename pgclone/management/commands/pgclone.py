@@ -1,12 +1,11 @@
+import sys
+
 from django.core.management.base import BaseCommand
 
-from pgclone import dump
-from pgclone import logging
-from pgclone import ls
-from pgclone import restore
+from pgclone import dump_cmd, exceptions, logging, ls_cmd, restore_cmd
 
 
-class SubCommands(BaseCommand):
+class Subcommands(BaseCommand):
     """
     Subcommand class vendored in from
     https://github.com/andrewp-as-is/django-subcommands.py
@@ -46,96 +45,145 @@ class SubCommands(BaseCommand):
         return command_class().execute(*args, **options)
 
 
-class DumpCommand(BaseCommand):
+class BaseSubcommand(BaseCommand):
+    def handle(self, *args, **options):
+        try:
+            logger = logging.new_stdout_logger()
+            with logging.set_logger(logger):
+                return self.subhandle(*args, **options)
+        except exceptions.Error as exc:
+            self.stderr.write(str(exc))
+            sys.exit(1)
+
+
+class LsCommand(BaseSubcommand):
     def add_arguments(self, parser):
+        parser.add_argument("dump_key", nargs="?")
+        parser.add_argument("--instances", action="store_true", help="Only list instances.")
+        parser.add_argument("--databases", action="store_true", help="Only list databases.")
+        parser.add_argument("--configs", action="store_true", help="Only list configs.")
+        parser.add_argument("--local", action="store_true", help="Only list local restore keys.")
         parser.add_argument(
-            "--exclude-model",
-            nargs="*",
-            dest="exclude_models",
-            help="Model(s) you wish to exclude when dumping",
+            "-d",
+            "--database",
+            help="The database to use when listing local restore keys.",
+        )
+        parser.add_argument(
+            "-s",
+            "--storage-location",
+            help="Use this storage location for listing.",
         )
         parser.add_argument(
             "-c",
-            "--dump-config",
-            dest="dump_config_name",
-            help=("The dump configuration name from" " settings.PGCLONE_DUMP_CONFIGS"),
+            "--config",
+            help="Use this configuration to supply default option values.",
         )
 
-    def handle(self, *args, **options):
-        logger = logging.new_stdout_logger()
-        with logging.set_logger(logger):
-            dump(
-                exclude_models=options["exclude_models"],
-                dump_config_name=options["dump_config_name"],
-            )
-
-
-class LsCommand(BaseCommand):
-    def add_arguments(self, parser):
-        parser.add_argument("db_name", nargs="?", help="The database name to list")
-        parser.add_argument(
-            "--only-db-names",
-            action="store_true",
-            help="Only list database names",
-        )
-        parser.add_argument("--local", action="store_true", help="Only list local restore keys")
-
-    def handle(self, *args, **options):
-        results = ls(
-            db_name=options["db_name"],
-            only_db_names=options["only_db_names"],
+    def subhandle(self, *args, **options):
+        results = ls_cmd.ls(
+            dump_key=options["dump_key"],
+            instances=options["instances"],
+            databases=options["databases"],
+            configs=options["configs"],
             local=options["local"],
+            database=options["database"],
+            storage_location=options["storage_location"],
+            config=options["config"],
         )
         for dump_name in results:
-            print(dump_name)
+            sys.stdout.write(dump_name + "\n")
 
 
-class RestoreCommand(BaseCommand):
+class DumpCommand(BaseSubcommand):
     def add_arguments(self, parser):
         parser.add_argument(
-            "db_name_or_dump_key",
-            help="The database name or dump key to restore",
+            "-e", "--exclude", nargs="*", help="Model(s) you wish to exclude when dumping."
         )
+        parser.add_argument(
+            "--pre-dump-hook",
+            nargs="*",
+            dest="pre_dump_hooks",
+            help=(
+                "Management command(s) that will be executed on"
+                " the database before it is dumped."
+            ),
+        )
+        parser.add_argument("-i", "--instance", help="Use this instance name in the dump key.")
+        parser.add_argument(
+            "-d",
+            "--database",
+            help="Dump this database.",
+        )
+        parser.add_argument(
+            "-s",
+            "--storage-location",
+            help="Dump to this storage location.",
+        )
+        parser.add_argument(
+            "-c",
+            "--config",
+            help="Use this configuration to supply default option values.",
+        )
+
+    def subhandle(self, *args, **options):
+        dump_cmd.dump(
+            exclude=options["exclude"],
+            pre_dump_hooks=options["pre_dump_hooks"],
+            config=options["config"],
+            instance=options["instance"],
+            database=options["database"],
+            storage_location=options["storage_location"],
+        )
+
+
+class RestoreCommand(BaseSubcommand):
+    def add_arguments(self, parser):
+        parser.add_argument("dump_key", nargs="?", help="The dump key (or prefix) to restore.")
         parser.add_argument(
             "--pre-swap-hook",
             nargs="*",
             dest="pre_swap_hooks",
             help=(
-                "Management command(s) that should be executed on"
+                "Management command(s) that will be executed on"
                 " the restored database before it is swapped to the"
                 " primary database."
             ),
         )
         parser.add_argument(
-            "-c",
-            "--restore-config",
-            dest="restore_config_name",
-            help=("The restore configuration name from" " settings.PGCLONE_RESTORE_CONFIGS"),
+            "-r",
+            "--reversible",
+            action="store_true",
+            help="Keep current and previous database copies available for reversion.",
         )
         parser.add_argument(
-            "--reversible",
-            dest="reversible",
-            action="store_true",
-            help=(
-                "Create 2 extra local databases for quicker future "
-                "restoration at the cost of a longer initial restore."
-            ),
+            "-d",
+            "--database",
+            help="Restore to this database.",
+        )
+        parser.add_argument(
+            "-s",
+            "--storage-location",
+            help="Restore from this storage location.",
+        )
+        parser.add_argument(
+            "-c",
+            "--config",
+            help="Use this configuration to supply default option values.",
         )
 
-    def handle(self, *args, **options):
-        logger = logging.new_stdout_logger()
-        with logging.set_logger(logger):
-            restore(
-                options["db_name_or_dump_key"],
-                pre_swap_hooks=options["pre_swap_hooks"],
-                restore_config_name=options["restore_config_name"],
-                reversible=options["reversible"],
-            )
+    def subhandle(self, *args, **options):
+        restore_cmd.restore(
+            dump_key=options["dump_key"],
+            pre_swap_hooks=options["pre_swap_hooks"],
+            config=options["config"],
+            reversible=options["reversible"],
+            database=options["database"],
+        )
 
 
-class Command(SubCommands):
+class Command(Subcommands):
     subcommands = {
-        "dump": DumpCommand,
         "ls": LsCommand,
+        "dump": DumpCommand,
         "restore": RestoreCommand,
     }
