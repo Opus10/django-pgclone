@@ -15,14 +15,16 @@ _routed_connection = threading.local()
 
 def _route(execute, sql, params, many, context):
     """A hook that routes to the routed connection"""
-    assert _routed_connection.value
+    cursor = context["cursor"]
 
-    with _routed_connection.value.cursor() as cursor:
-        context = copy.copy(context)
-        context["connection"] = _routed_connection.value
-        context["cursor"] = cursor
+    # Override the cursorwrapper's cursor with our own
+    if cursor.db != _routed_connection.value:  # pragma: no branch
+        cursor.cursor.close()
+        cursor.db.close()
+        cursor.cursor = _routed_connection.value.cursor()
+        cursor.db = _routed_connection.value
 
-        return execute(sql, params, many, context)
+    return execute(sql, params, many, context)
 
 
 @contextlib.contextmanager
