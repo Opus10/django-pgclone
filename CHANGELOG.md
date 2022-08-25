@@ -1,4 +1,8 @@
 # Changelog
+## 2.3.1 (2022-08-25)
+### Trivial
+  - Don't close original connection during routing [Wes Kendall, 93e5c03]
+
 ## 2.3.0 (2022-08-25)
 ### Bug
   - Fix issue routing connections during restore [Wes Kendall, 2ab5552]
