@@ -20,7 +20,6 @@ def _route(execute, sql, params, many, context):
     # Override the cursorwrapper's cursor with our own
     if cursor.db != _routed_connection.value:  # pragma: no branch
         cursor.cursor.close()
-        cursor.db.close()
         cursor.cursor = _routed_connection.value.cursor()
         cursor.db = _routed_connection.value
 
