@@ -88,8 +88,8 @@ def _remote_restore(dump_key, *, temp_db, using, storage_location):
     # assume it is the latest dump of a database name and get the latest
     # dump key
     if not dump_key.endswith(".dump"):
-        sorted_dumps = sorted(ls_cmd.ls(dump_key=dump_key))
-        found_dump_key = sorted_dumps[-1] if sorted_dumps else None
+        dump_keys = ls_cmd.ls(dump_key=dump_key, storage_location=storage_location)
+        found_dump_key = dump_keys[0] if dump_keys else None
 
         if not found_dump_key:
             raise exceptions.RuntimeError(
