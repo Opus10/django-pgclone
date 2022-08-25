@@ -129,10 +129,10 @@ class DumpCommand(BaseSubcommand):
         dump_cmd.dump(
             exclude=options["exclude"],
             pre_dump_hooks=options["pre_dump_hooks"],
-            config=options["config"],
             instance=options["instance"],
             database=options["database"],
             storage_location=options["storage_location"],
+            config=options["config"],
         )
 
 
@@ -176,9 +176,10 @@ class RestoreCommand(BaseSubcommand):
         restore_cmd.restore(
             dump_key=options["dump_key"],
             pre_swap_hooks=options["pre_swap_hooks"],
-            config=options["config"],
             reversible=options["reversible"],
             database=options["database"],
+            storage_location=options["storage_location"],
+            config=options["config"],
         )
 
 
