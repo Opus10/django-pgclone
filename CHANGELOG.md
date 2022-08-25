@@ -1,4 +1,11 @@
 # Changelog
+## 2.3.0 (2022-08-25)
+### Bug
+  - Fix issue routing connections during restore [Wes Kendall, 2ab5552]
+
+    An issue was fixed that prevented routing hooks during restores from
+    functioning properly.
+
 ## 2.2.0 (2022-08-25)
 ### Bug
   - Restore command properly overrides storage location [Wes Kendall, 15acd90]
