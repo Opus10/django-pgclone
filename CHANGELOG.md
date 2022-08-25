@@ -1,4 +1,11 @@
 # Changelog
+## 2.2.0 (2022-08-25)
+### Bug
+  - Restore command properly overrides storage location [Wes Kendall, 15acd90]
+
+    The restore command now properly passes through custom storage locations from the
+    command line.
+
 ## 2.1.0 (2022-08-24)
 ### Bug
   - Allow "reversible" to proliferate through settings and configs. [Wes Kendall, bda7b69]
