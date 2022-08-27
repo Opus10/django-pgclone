@@ -71,8 +71,8 @@ def _local_restore(dump_key, *, temp_db, curr_db, prev_db, using):
     if local_restore_db != temp_db:  # pragma: no branch
         _drop_db(temp_db, using=using)
         create_temp_sql = f"""
-            CREATE DATABASE {temp_db["NAME"]}
-            TEMPLATE {local_restore_db["NAME"]}
+            CREATE DATABASE "{temp_db["NAME"]}"
+            TEMPLATE "{local_restore_db["NAME"]}"
         """
         run.psql(create_temp_sql, using=using)
 
