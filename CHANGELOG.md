@@ -1,4 +1,9 @@
 # Changelog
+## 2.3.2 (2022-08-26)
+### Trivial
+  - Local development enhancements [Wes Kendall, 5d62570]
+  - Test against Django 4.1 and other CI improvements [Wes Kendall, c11c848]
+
 ## 2.3.1 (2022-08-25)
 ### Trivial
   - Don't close original connection during routing [Wes Kendall, 93e5c03]
