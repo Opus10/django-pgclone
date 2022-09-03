@@ -1,5 +1,9 @@
 # Changelog
-## 2.3.2 (2022-08-26)
+## 2.3.3 (2022-09-03)
+### Trivial
+  - Implemented a more robust routing method for pre-swap hooks [Wes Kendall, 8f34c40]
+
+## 2.3.2 (2022-08-27)
 ### Trivial
   - Local development enhancements [Wes Kendall, 5d62570]
   - Test against Django 4.1 and other CI improvements [Wes Kendall, c11c848]
