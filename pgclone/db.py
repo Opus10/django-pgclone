@@ -1,29 +1,17 @@
 import contextlib
 import copy
 import functools
-import threading
 
 from django.conf import settings as django_settings
-from django.db import connections
+from django.db import connections, DEFAULT_DB_ALIAS
 from django.db.utils import load_backend
 
 from pgclone import exceptions, settings
 
 
-_routed_connection = threading.local()
-
-
-def _route(execute, sql, params, many, context):
-    """A hook that routes to the routed connection"""
-    cursor = context["cursor"]
-
-    # Override the cursorwrapper's cursor with our own
-    if cursor.db != _routed_connection.value:  # pragma: no branch
-        cursor.cursor.close()
-        cursor.cursor = _routed_connection.value.cursor()
-        cursor.db = _routed_connection.value
-
-    return execute(sql, params, many, context)
+def _no_queries_during_routing(execute, sql, params, many, context):  # pragma: no cover
+    alias = context["connection"].alias
+    raise RuntimeError(f'Cannot query non-default database "{alias}" during pgclone hooks')
 
 
 @contextlib.contextmanager
@@ -36,19 +24,22 @@ def route(destination):
         using (str): The source database to use when
             routing to another database. Defaults to the default database.
     """
-    _routed_connection.value = load_backend(destination["ENGINE"]).DatabaseWrapper(
-        destination, "routed"
-    )
-
     with contextlib.ExitStack() as stack:
+        # Protect every connection from being queried
         for alias in connections:
-            stack.enter_context(connections[alias].execute_wrapper(_route))
+            stack.enter_context(connections[alias].execute_wrapper(_no_queries_during_routing))
+
+        # Swap the default and routed connection. Note: the connections object is thread safe
+        default_connection = connections[DEFAULT_DB_ALIAS]
+        connections[DEFAULT_DB_ALIAS] = load_backend(destination["ENGINE"]).DatabaseWrapper(
+            destination, DEFAULT_DB_ALIAS
+        )
 
         try:
             yield
         finally:
-            _routed_connection.value.close()
-            _routed_connection.value = None
+            connections[DEFAULT_DB_ALIAS].close()
+            connections[DEFAULT_DB_ALIAS] = default_connection
 
 
 def conf(*, using):
@@ -59,7 +50,24 @@ def conf(*, using):
         )
 
     # Deep copy to ensure the caller doesn't modify this django setting
-    return copy.deepcopy(django_settings.DATABASES[using])
+    database = copy.deepcopy(django_settings.DATABASES[using])
+
+    # Set the same defaults as Django so that it works with routing. This
+    # is copied directly from
+    # https://github.com/django/django/blob/c8eb9a7c451f7935a9eaafbb195acf2aa9fa867d/django/db/utils.py#L160
+    database.setdefault("ATOMIC_REQUESTS", False)
+    database.setdefault("AUTOCOMMIT", True)
+    database.setdefault("ENGINE", "django.db.backends.dummy")
+    if database["ENGINE"] == "django.db.backends." or not database["ENGINE"]:  # pragma: no cover
+        database["ENGINE"] = "django.db.backends.dummy"
+
+    database.setdefault("CONN_MAX_AGE", 0)
+    database.setdefault("OPTIONS", {})
+    database.setdefault("TIME_ZONE", None)
+    for setting in ["NAME", "USER", "PASSWORD", "HOST", "PORT"]:
+        database.setdefault(setting, "")
+
+    return database
 
 
 def make(db_name, *, using):
