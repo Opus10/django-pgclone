@@ -107,7 +107,7 @@ def _remote_restore(dump_key, *, temp_db, using, storage_location):
     _set_search_path(temp_db, using=using)
 
     logging.success_msg(f'Running pg_restore on "{dump_key}"')
-    pg_restore_cmd = f"pg_restore --verbose --no-acl --no-owner -d '{db.url(temp_db)}'"
+    pg_restore_cmd = f"pg_restore --verbose --no-acl --no-owner -d {db.url(temp_db)}"
     pg_restore_cmd = storage_client.pg_restore(file_path) + " " + pg_restore_cmd
 
     # When restoring, we need to ignore errors because there are certain

@@ -1,6 +1,7 @@
 import contextlib
 import copy
 import functools
+import shlex
 
 from django.conf import settings as django_settings
 from django.db import connections, DEFAULT_DB_ALIAS
@@ -101,7 +102,7 @@ def conn(*, using):
 
 def url(db_config):
     """Convert a database dictionary config to a url"""
-    return (
+    return shlex.quote(
         f'postgresql://{db_config["USER"]}:{db_config["PASSWORD"]}'
         f'@{db_config["HOST"]}:{db_config["PORT"]}/{db_config["NAME"]}'
     )
