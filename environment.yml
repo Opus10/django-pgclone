@@ -1,0 +1,10 @@
+name: django-pgclone
+channels:
+  - conda-forge
+dependencies:
+  - python==3.10
+  - poetry==1.4.1
+  - pip
+variables:
+  DATABASE_URL: "postgres://postgres@localhost:5432/pgclone_local"
+  EXEC_WRAPPER: ""

@@ -1,7 +1,7 @@
 _extensions:
 - jinja2_time.TimeExtension
 _template: git@github.com:Opus10/public-django-app-template.git
-_version: a912e2e514f3da5d681f22b5040b5bdf237d47de
+_version: e0adc23144f6c7a25a69fdf00b3d7aab5b4b988a
 module_name: pgclone
 repo_name: django-pgclone
 short_description: Dump and restore Postgres databases with Django.
