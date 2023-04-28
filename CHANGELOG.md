@@ -1,4 +1,13 @@
 # Changelog
+## 2.4.0 (2023-04-28)
+### Bug
+  - Quote database connection strings [Wesley Kendall, 31fd3cf]
+
+    Database connection strings are properly quoted to avoid issues when there
+    are special characters.
+### Trivial
+  - Updated developer utilities with the latest Django library template [Wesley Kendall, 2508920]
+
 ## 2.3.3 (2022-09-03)
 ### Trivial
   - Implemented a more robust routing method for pre-swap hooks [Wes Kendall, 8f34c40]
