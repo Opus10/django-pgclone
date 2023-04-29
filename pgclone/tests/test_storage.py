@@ -33,3 +33,21 @@ def test_s3_pg_dump():
 
 def test_s3_pg_restore():
     assert storage.S3("bucket").pg_restore("file_path") == "aws s3 cp file_path - |"
+
+
+def test_s3_pg_dump_with_endpoint_url(settings):
+    settings.PGCLONE_S3_ENDPOINT_URL = "https://endpoint.example.com"
+    assert (
+        storage.S3("bucket").pg_dump("file_path")
+        == "| aws s3 cp - file_path --endpoint-url https://endpoint.example.com"
+    )
+    delattr(settings, "PGCLONE_S3_ENDPOINT_URL")
+
+
+def test_s3_pg_restore_with_endpoint_url(settings):
+    settings.PGCLONE_S3_ENDPOINT_URL = "https://endpoint.example.com"
+    assert (
+        storage.S3("bucket").pg_restore("file_path")
+        == "aws s3 cp file_path - --endpoint-url https://endpoint.example.com |"
+    )
+    delattr(settings, "PGCLONE_S3_ENDPOINT_URL")

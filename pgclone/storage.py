@@ -46,12 +46,18 @@ class Storage:
 class S3(Storage):
     def __init__(self, *args, **kwargs):
         validate_s3_support()
+        self.s3_endpoint_url = (
+            f" --endpoint-url {settings.s3_endpoint_url()}"
+            if settings.s3_endpoint_url() is not None
+            and isinstance(settings.s3_endpoint_url(), str)
+            else ""
+        )
         super().__init__(*args, **kwargs)
 
     def ls(self, prefix=None):  # pragma: no cover
         s3_path = os.path.join(self.storage_location, prefix or "")
         s3_bucket = "s3://" + s3_path[5:].split("/", 1)[0]
-        cmd = f"aws s3 ls {s3_path} --recursive | cut -c32-"
+        cmd = f"aws s3 ls {s3_path}{self.s3_endpoint_url} --recursive | cut -c32-"
         process = subprocess.run(
             cmd, shell=True, stdout=subprocess.PIPE, check=True, env=dict(os.environ, **self.env)
         )
@@ -66,10 +72,10 @@ class S3(Storage):
         return settings.s3_config()
 
     def pg_dump(self, file_path):
-        return f"| aws s3 cp - {file_path}"
+        return f"| aws s3 cp - {file_path}{self.s3_endpoint_url}"
 
     def pg_restore(self, file_path):
-        return f"aws s3 cp {file_path} - |"
+        return f"aws s3 cp {file_path} -{self.s3_endpoint_url} |"
 
 
 class Local(Storage):
