@@ -1,4 +1,23 @@
 # Changelog
+## 2.5.0 (2023-05-23)
+### Feature
+  - Add ``pgclone copy`` command. [Wes Kendall, 6ad17b9]
+
+    The ``pgclone copy`` command is a shortcut for running ``CREATE DATABASE <target> TEMPLATE <source>``
+    for doing quick copies. This command complements local ``pgclone restore`` commands.
+
+    For example, copy the current database with ``pgclone copy``, and quickly restore it with
+    ``pgclone restore :current``. Use a custom name with ``pgclone copy :custom_name`` and restore it
+    with ``pgclone restore :custom_name``.
+
+    Note that this command takes out an exclusive lock on the source database, meaning it should not be
+    executed in production environments.
+  - Add ``settings.PGCLONE_ALLOW_DUMP`` setting. [Wes Kendall, 82c90f4]
+
+    Set this setting to ``False`` to prevent the ability to run ``pgclone dump``.
+### Trivial
+  - Add ability to specify endpoint url [Jack Linke, 2e1e5f5]
+
 ## 2.4.0 (2023-04-28)
 ### Bug
   - Quote database connection strings [Wesley Kendall, 31fd3cf]
