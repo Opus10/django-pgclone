@@ -108,6 +108,33 @@ For example:
 
 **Default**: ``{}``
 
+PGCLONE_S3_ENDPOINT_URL
+-----------------------
+
+The S3 endpoint url to send requests to if using a non-standard AWS endpoint or
+an S3 service other than AWS (such as DigitalOcean Spaces or self-hosting an
+endpoint directly within your private VPC). Only applicable when using the S3
+storage backend.
+
+For example:
+
+.. code-block:: python
+
+    PGCLONE_S3_ENDPOINT_URL = "https://endpoint.example.com"
+
+If using DigitalOcean Spaces, be sure to set ``PGCLONE_S3_ENDPOINT_URL`` and the
+storage location appropriately. For example, if the name of your Space is
+"my-backup-bucket" in the DigitalOcean SFO2 region, and the resulting endpoint is
+"https://my-backup-bucket.sfo2.digitaloceanspaces.com", then the following example
+settings would work (note we removed the Space's name from the endpoint url):
+
+.. code-block:: python
+
+    PGCLONE_S3_ENDPOINT_URL = "https://sfo2.digitaloceanspaces.com"
+    PGCLONE_STORAGE_LOCATION = "s3://my-backup-bucket/"
+
+**Default**: ``None``
+
 PGCLONE_STORAGE_LOCATION
 ------------------------
 

@@ -11,6 +11,10 @@ def s3_config():
     return getattr(settings, "PGCLONE_S3_CONFIG", {})
 
 
+def s3_endpoint_url():
+    return getattr(settings, "PGCLONE_S3_ENDPOINT_URL", None)
+
+
 def storage_location():
     location = getattr(settings, "PGCLONE_STORAGE_LOCATION", ".pgclone")
     if not location.endswith("/"):  # pragma: no cover

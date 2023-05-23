@@ -47,3 +47,13 @@ Here we override the AWS credentials and region:
 
 See `this guide <https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html>`__
 for all environment variables that can be used with the AWS CLI.
+
+If using a non-standard AWS endpoint url or a non-AWS S3 provider, the endpoint url must be
+specified. Unfortunately, AWS CLI does not provide an environmental variable for this purpose.
+Instead, use the ``settings.PGCLONE_S3_ENDPOINT_URL`` setting, which will override the AWS CLI
+commands with the ``--endpoint-url`` option. ``AWS_ACCESS_KEY_ID`` and
+``AWS_SECRET_ACCESS_KEY`` must still be specified in ``settings.PGCLONE_S3_CONFIG``.
+
+.. code-block:: python
+
+    PGCLONE_S3_ENDPOINT_URL = "https://endpoint.example.com"
