@@ -4,7 +4,7 @@ import re
 
 from django.apps import apps
 
-from pgclone import db, logging, options, run, storage
+from pgclone import db, exceptions, logging, options, run, settings, storage
 
 
 DT_FORMAT = "%Y-%m-%d-%H-%M-%S-%f"
@@ -21,6 +21,9 @@ def _dump_key(*, instance, database, config):
 
 def _dump(*, exclude, config, pre_dump_hooks, instance, database, storage_location):
     """Dump implementation"""
+    if not settings.allow_restore():  # pragma: no cover
+        raise exceptions.RuntimeError("Dump not allowed.")
+
     storage_client = storage.client(storage_location)
     dump_db = db.conf(using=database)
 

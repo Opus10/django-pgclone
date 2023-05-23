@@ -30,6 +30,14 @@ def allow_restore():
     return getattr(settings, "PGCLONE_ALLOW_RESTORE", True)
 
 
+def allow_dump():
+    return getattr(settings, "PGCLONE_ALLOW_DUMP", True)
+
+
+def allow_copy():
+    return getattr(settings, "PGCLONE_ALLOW_COPY", True)
+
+
 def configs():
     return getattr(settings, "PGCLONE_CONFIGS", {})
 
