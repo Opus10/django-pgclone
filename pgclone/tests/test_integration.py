@@ -79,7 +79,8 @@ def test_simple_dump_ls_restore(tmpdir, capsys, settings):
 @pytest.mark.django_db(transaction=True)
 def test_reversible_dump_ls_restore(tmpdir, capsys, settings, mocker):
     """
-    Tests a reversible dump, ls, and restore for local clones
+    Tests a reversible dump, ls, and restore for local clones. Also verifes
+    copy works locally
     """
     settings.PGCLONE_STORAGE_LOCATION = tmpdir.strpath
     db_name = settings.DATABASES["default"]["NAME"]
@@ -158,3 +159,31 @@ def test_reversible_dump_ls_restore(tmpdir, capsys, settings, mocker):
     with pytest.raises(SystemExit):
         call_command("pgclone", "restore", ":current")
     assert capsys.readouterr().err.startswith("Local database")
+
+    # Make a local copy and restore. By default, it uses the same name as
+    # the :current database to faciliate easy restoring
+    ddf.G("auth.User")
+    assert User.objects.count() == 4
+    call_command("pgclone", "copy")
+    connection.connect()
+    ddf.G("auth.User")
+    assert User.objects.count() == 5
+    call_command("pgclone", "restore", ":current")
+    connection.connect()
+    assert User.objects.count() == 4
+
+    # Make a named copy and restore. Use both the reserved "previous" name and a custom name
+    call_command("pgclone", "copy", ":previous")
+    connection.connect()
+    ddf.G("auth.User")
+    assert User.objects.count() == 5
+    call_command("pgclone", "copy", f":named_copy_{settings.DATABASES['default']['NAME']}")
+    connection.connect()
+    ddf.G("auth.User")
+    assert User.objects.count() == 6
+    call_command("pgclone", "restore", ":previous")
+    connection.connect()
+    assert User.objects.count() == 4
+    call_command("pgclone", "restore", f":named_copy_{settings.DATABASES['default']['NAME']}")
+    connection.connect()
+    assert User.objects.count() == 5

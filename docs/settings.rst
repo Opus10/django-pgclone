@@ -16,6 +16,16 @@ PGCLONE_ALLOW_RESTORE
 
 If ``False``, running any restore results in an error.
 
+PGCLONE_ALLOW_DUMP
+------------------
+
+If ``False``, running any dump results in an error.
+
+PGCLONE_ALLOW_COPY
+------------------
+
+If ``False``, running any copy results in an error.
+
 **Default** ``True``
 
 PGCLONE_CONFIGS

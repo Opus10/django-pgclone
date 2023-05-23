@@ -54,6 +54,7 @@ following sections for more information:
 * :ref:`hooks` - Run management command hooks during
   dumping or restoring.
 * :ref:`reversible` - Create restores that can be quickly reverted.
+* :ref:`local_copies` - Create local copies that can be quickly reverted.
 * :ref:`configurations` - For re-using command parameters.
 * :ref:`settings` - All settings.
 * :ref:`rds` - Additional notes on Amazon RDS configuration.

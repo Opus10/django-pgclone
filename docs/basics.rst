@@ -8,15 +8,19 @@ Here we cover some of the basics of ``django-pgclone`` to make it easier to unde
 Core features
 -------------
 
-``django-pgclone`` has three primary commands:
+``django-pgclone`` has four primary commands:
 
 1. ``python manage.py pgclone ls``: Lists dumps.
 2. ``python manage.py pgclone dump``: Dump a database.
 3. ``python manage.py pgclone restore``: Restore a database.
+4. ``python manage.py pgclone copy``: Make a local copy of a database.
 
 The ``dump`` and ``restore`` commands wrap `pg_dump <https://www.postgresql.org/docs/current/app-pgdump.html>`__
 and `pg_restore <https://www.postgresql.org/docs/current/app-pgrestore.html>`__. Dumps and restores are compressed
 and streamed to and from a storage location. File names are visible with the ``ls`` command.
+
+``restore`` can restore local databases, such as local copies created during ``pgclone restore --reversible``
+or with ``pgclone copy``.
 
 Users can write :ref:`Hooks <hooks>` for dumping and restoring. For example:
 
@@ -59,6 +63,9 @@ following meaning:
   See :ref:`configurations` for more information on configurations.
 
 * **timestamp**: The time at which the dump happened.
+
+Local database copies have a special dump key prefixed with the ``:`` symbol. These can be listed
+with ``pgclone ls --local`` and passed as the dump key to ``pgclone restore``.
 
 Default values for command options
 ----------------------------------

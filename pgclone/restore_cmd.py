@@ -15,22 +15,6 @@ def _db_exists(database, *, using):
         return False
 
 
-def _kill_connections_to_db(database, *, using):
-    kill_connections_sql = f"""
-        SELECT pg_terminate_backend(pg_stat_activity.pid)
-        FROM pg_stat_activity
-        WHERE pg_stat_activity.datname = '{database["NAME"]}'
-            AND pid <> pg_backend_pid()
-    """
-    run.psql(kill_connections_sql, using=using)
-
-
-def _drop_db(database, *, using):
-    _kill_connections_to_db(database, using=using)
-    drop_sql = f'DROP DATABASE IF EXISTS "{database["NAME"]}"'
-    run.psql(drop_sql, using=using)
-
-
 def _set_search_path(database, *, using):
     """
     pg_restore does not restore the original search_path variable of the
@@ -45,7 +29,7 @@ def _set_search_path(database, *, using):
         search_path = cursor.fetchone()[0]
 
     set_search_path_sql = f'ALTER DATABASE "{database["NAME"]}" SET search_path to {search_path}'
-    run.psql(set_search_path_sql, using=using)
+    db.psql(set_search_path_sql, using=using)
 
 
 def _local_restore(dump_key, *, temp_db, curr_db, prev_db, using):
@@ -69,12 +53,12 @@ def _local_restore(dump_key, *, temp_db, curr_db, prev_db, using):
     # try to restore the temp_db, so do nothing if this database
     # is provided by the user
     if local_restore_db != temp_db:  # pragma: no branch
-        _drop_db(temp_db, using=using)
+        db.drop(temp_db, using=using)
         create_temp_sql = f"""
             CREATE DATABASE "{temp_db["NAME"]}"
             TEMPLATE "{local_restore_db["NAME"]}"
         """
-        run.psql(create_temp_sql, using=using)
+        db.psql(create_temp_sql, using=using)
 
     _set_search_path(temp_db, using=using)
 
@@ -101,9 +85,9 @@ def _remote_restore(dump_key, *, temp_db, using, storage_location):
     file_path = os.path.join(storage_location, dump_key)
 
     logging.success_msg("Creating the temporary restore db")
-    _drop_db(temp_db, using=using)
+    db.drop(temp_db, using=using)
     create_temp_sql = f'CREATE DATABASE "{temp_db["NAME"]}"'
-    run.psql(create_temp_sql, using=using)
+    db.psql(create_temp_sql, using=using)
     _set_search_path(temp_db, using=using)
 
     logging.success_msg(f'Running pg_restore on "{dump_key}"')
@@ -165,13 +149,13 @@ def _restore(*, dump_key, pre_swap_hooks, config, reversible, database, storage_
     # Avoid this if we are restoring the current db
     if reversible and local_restore_db != curr_db:
         logging.success_msg("Creating snapshot for reversible restore")
-        _drop_db(curr_db, using=database)
+        db.drop(curr_db, using=database)
         create_current_db_sql = f"""
             CREATE DATABASE "{curr_db['NAME']}"
              WITH TEMPLATE
             "{temp_db['NAME']}"
         """
-        run.psql(create_current_db_sql, using=database)
+        db.psql(create_current_db_sql, using=database)
 
     # pre-swap hook step
     with db.route(temp_db):
@@ -181,27 +165,27 @@ def _restore(*, dump_key, pre_swap_hooks, config, reversible, database, storage_
 
     # swap step
     logging.success_msg("Swapping the restored copy with the primary database")
-    _drop_db(prev_db, using=database)
-    _kill_connections_to_db(restore_db, using=database)
+    db.drop(prev_db, using=database)
+    db.kill_connections(restore_db, using=database)
     alter_db_sql = f"""
         ALTER DATABASE "{restore_db['NAME']}" RENAME TO
         "{prev_db['NAME']}"
     """
     # There's a scenario where the default DB may not exist before running
     # this, so just ignore errors on this command
-    run.psql(alter_db_sql, ignore_errors=True, using=database)
+    db.psql(alter_db_sql, ignore_errors=True, using=database)
 
-    _kill_connections_to_db(temp_db, using=database)
+    db.kill_connections(temp_db, using=database)
     rename_sql = f"""
         ALTER DATABASE "{temp_db["NAME"]}"
         RENAME TO "{restore_db["NAME"]}"
     """
-    run.psql(rename_sql, using=database)
+    db.psql(rename_sql, using=database)
 
     if not reversible:
         logging.success_msg("Cleaning old pgclone resources")
-        _drop_db(curr_db, using=database)
-        _drop_db(prev_db, using=database)
+        db.drop(curr_db, using=database)
+        db.drop(prev_db, using=database)
 
     logging.success_msg(f'Successfully restored dump "{dump_key}" to database "{database}"')
 
