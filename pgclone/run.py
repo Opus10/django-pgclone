@@ -5,7 +5,7 @@ import subprocess
 
 from django.core.management import call_command
 
-from pgclone import db, exceptions, logging
+from pgclone import exceptions, logging
 
 
 def shell(cmd, ignore_errors=False, env=None):
@@ -51,12 +51,3 @@ def management(cmd, *cmd_args, **cmd_kwargs):
         raise
     else:
         logger.info(output.getvalue())
-
-
-def psql(sql, *, using, ignore_errors=False):
-    """Runs psql -c with properly formatted SQL"""
-    db_url = db.url(db.conn(using=using))
-
-    # Format special SQL characters
-    sql = sql.replace("$", "\\$").replace("\n", " ").replace('"', '\\"').strip()
-    return shell(f'psql {db_url} -P pager=off -c "{sql};"', ignore_errors=ignore_errors)

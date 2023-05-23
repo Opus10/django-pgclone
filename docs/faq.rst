@@ -16,6 +16,15 @@ If storage or lengthier restore times are not a concern, you can also
 configure :ref:`Reversible Restores <reversible>` to happen by default, allowing you to
 restore back to the previous version if it was a mistake.
 
+What other ways can I protect accidental incorrect usage?
+---------------------------------------------------------
+
+All core commands (``dump``, ``restore``, and ``copy``) have associated ``PGCLONE_ALLOW_*``
+options. In a production environment, setting
+``settings.PGCLONE_ALLOW_RESTORE`` and ``settings.PGCLONE_ALLOW_COPY`` to ``False`` are good ideas. If you
+have sensitive data that should not be dumped to outside storage, set
+``settings.PGCLONE_ALLOW_DUMP`` to ``False``.
+
 ``pg_restore`` shows errors but succeeded. What happened?
 ---------------------------------------------------------
 

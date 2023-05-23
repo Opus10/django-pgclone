@@ -11,6 +11,7 @@ Table of Contents
    storage
    hooks
    reversible
+   local_copies
    configurations
    settings
    rds

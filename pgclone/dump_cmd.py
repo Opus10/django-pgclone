@@ -21,7 +21,7 @@ def _dump_key(*, instance, database, config):
 
 def _dump(*, exclude, config, pre_dump_hooks, instance, database, storage_location):
     """Dump implementation"""
-    if not settings.allow_restore():  # pragma: no cover
+    if not settings.allow_dump():  # pragma: no cover
         raise exceptions.RuntimeError("Dump not allowed.")
 
     storage_client = storage.client(storage_location)

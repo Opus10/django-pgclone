@@ -57,6 +57,10 @@ Dump the database. Dump names are in the format of ``<instance>/<database>/<conf
     When doing a dump with ``-e`` or ``--pre-dump-hook`` and ``-c``, a config name of "none" will be
     used in the dump key since these parameters can alter the dump.
 
+.. tip::
+
+    Set ``settings.PGCLONE_ALLOW_DUMP`` to ``False`` to disable dumps.
+
 restore
 -------
 
@@ -67,7 +71,9 @@ upon completion.
 
 dump_key
     A dump key or prefix of a dump key. If a prefix is provided, the most recent
-    dump key matching it will be used.
+    dump key matching it will be used. A dump key with ``:`` at the beginning
+    means that we are restoring a local database, such as one created when restoring
+    with the ``--reversible`` option.
 
 --pre-swap-hook  Execute a management command on the restored database
                  before it is swapped to the primary. Can be used multiple times.
@@ -79,3 +85,31 @@ dump_key
 .. tip::
 
     Set ``settings.PGCLONE_ALLOW_RESTORE`` to ``False`` to disable restores.
+
+copy
+----
+
+Make a local copy of the database using ``CREATE DATABASE <target> TEMPLATE <source>``.
+By default, the default database is copied to the same name created when
+performing a reversible restore, meaning one can do ``pgclone copy`` followed by
+``pgclone restore :current`` to restore it.
+
+**Options**
+
+dump_key
+    A dump key to identify the local copy. Must start with ``:`` and only consist
+    of valid database name characters.
+
+-d, --database  Copy this database.
+-c, --config  Use this configuration to supply default option values.
+
+.. danger::
+
+    Running ``pgclone copy`` will take out an exclusive access lock on the source database,
+    meaning all reads and writes to the database will be blocked until the operation
+    is finished. Only use this command in non-production environments for fast
+    copying and restores.
+
+.. tip::
+
+    Set ``settings.PGCLONE_ALLOW_COPY`` to ``False`` to disable copies.

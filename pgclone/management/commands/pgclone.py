@@ -2,7 +2,7 @@ import sys
 
 from django.core.management.base import BaseCommand
 
-from pgclone import dump_cmd, exceptions, logging, ls_cmd, restore_cmd
+from pgclone import copy_cmd, dump_cmd, exceptions, logging, ls_cmd, restore_cmd
 
 
 class Subcommands(BaseCommand):
@@ -183,9 +183,32 @@ class RestoreCommand(BaseSubcommand):
         )
 
 
+class CopyCommand(BaseSubcommand):
+    def add_arguments(self, parser):
+        parser.add_argument("dump_key", nargs="?", help="The local dump key to copy to.")
+        parser.add_argument(
+            "-d",
+            "--database",
+            help="Restore to this database.",
+        )
+        parser.add_argument(
+            "-c",
+            "--config",
+            help="Use this configuration to supply default option values.",
+        )
+
+    def subhandle(self, *args, **options):
+        copy_cmd.copy(
+            dump_key=options["dump_key"],
+            database=options["database"],
+            config=options["config"],
+        )
+
+
 class Command(Subcommands):
     subcommands = {
         "ls": LsCommand,
         "dump": DumpCommand,
         "restore": RestoreCommand,
+        "copy": CopyCommand,
     }

@@ -7,7 +7,7 @@ from django.conf import settings as django_settings
 from django.db import connections, DEFAULT_DB_ALIAS
 from django.db.utils import load_backend
 
-from pgclone import exceptions, settings
+from pgclone import exceptions, run, settings
 
 
 def _no_queries_during_routing(execute, sql, params, many, context):  # pragma: no cover
@@ -71,7 +71,7 @@ def conf(*, using):
     return database
 
 
-def make(db_name, *, using):
+def make(db_name, *, using, check=True):
     """Returns a DB config dict for the database named "db_name"
 
     Also ensures that no other database are configured with the provided
@@ -82,12 +82,13 @@ def make(db_name, *, using):
     need to happen, such as restricting one from using a name on an
     entirely different DB. We can handle this edge case later
     """
-    for db in django_settings.DATABASES.values():
-        if db.get("NAME") == db_name:  # pragma: no cover
-            raise exceptions.RuntimeError(
-                f'pgclone cannot use temporary database named "{db_name}"'
-                " since it is already configured in settings.DATABASES."
-            )
+    if check:
+        for db in django_settings.DATABASES.values():
+            if db.get("NAME") == db_name:  # pragma: no cover
+                raise exceptions.RuntimeError(
+                    f'pgclone cannot use temporary database named "{db_name}"'
+                    " since it is already configured in settings.DATABASES."
+                )
 
     db_config = conf(using=using)
     db_config["NAME"] = db_name
@@ -106,3 +107,28 @@ def url(db_config):
         f'postgresql://{db_config["USER"]}:{db_config["PASSWORD"]}'
         f'@{db_config["HOST"]}:{db_config["PORT"]}/{db_config["NAME"]}'
     )
+
+
+def psql(sql, *, using, ignore_errors=False):
+    """Runs psql -c with properly formatted SQL"""
+    db_url = url(conn(using=using))
+
+    # Format special SQL characters
+    sql = sql.replace("$", "\\$").replace("\n", " ").replace('"', '\\"').strip()
+    return run.shell(f'psql {db_url} -P pager=off -c "{sql};"', ignore_errors=ignore_errors)
+
+
+def kill_connections(database, *, using):
+    kill_connections_sql = f"""
+        SELECT pg_terminate_backend(pg_stat_activity.pid)
+        FROM pg_stat_activity
+        WHERE pg_stat_activity.datname = '{database["NAME"]}'
+            AND pid <> pg_backend_pid()
+    """
+    psql(kill_connections_sql, using=using)
+
+
+def drop(database, *, using):
+    kill_connections(database, using=using)
+    drop_sql = f'DROP DATABASE IF EXISTS "{database["NAME"]}"'
+    psql(drop_sql, using=using)
