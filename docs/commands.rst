@@ -65,7 +65,12 @@ restore
 -------
 
 Restore the database. Restores happen in a temporary database that is swapped into the main one
-upon completion.
+upon completion after hooks have finished. One can restore both dumps or local databases created
+via ``pgclone copy`` or as a result of using the ``--reversible`` option.
+
+Reversible restores keep around copies of the database before and after the dump was restored.
+You can quickly revert to these copies with ``pgclone restore :pre`` or
+``pgclone restore :post``. Read more about reversible restores :ref:`here <reversible>`.
 
 **Options**
 
@@ -77,7 +82,8 @@ dump_key
 
 --pre-swap-hook  Execute a management command on the restored database
                  before it is swapped to the primary. Can be used multiple times.
--r, --reversible  Keep current and previous database copies available for reversion.
+-r, --reversible  Keep local copies of before and after the restore happened. This only applies
+                  to restoring dumps and has no effect when restoring local copies.
 -d, --database  Restore to this database.
 -s, --storage-location  Restore from this storage location.
 -c, --config  Use this configuration to supply default option values.
@@ -90,15 +96,15 @@ copy
 ----
 
 Make a local copy of the database using ``CREATE DATABASE <target> TEMPLATE <source>``.
-By default, the default database is copied to the same name created when
-performing a reversible restore, meaning one can do ``pgclone copy`` followed by
-``pgclone restore :current`` to restore it.
+For example, ``pgclone copy :my_backup`` makes a copy that can be restored with
+``pgclone restore :my_backup``.
 
 **Options**
 
 dump_key
-    A dump key to identify the local copy. Must start with ``:`` and only consist
-    of valid database name characters.
+    The target database in the format of a local dump key. In other words, the local database name
+    prefixed with ``:``. The reserved names for reversible restores
+    (``:pre`` and ``:post``) cannot be used.
 
 -d, --database  Copy this database.
 -c, --config  Use this configuration to supply default option values.

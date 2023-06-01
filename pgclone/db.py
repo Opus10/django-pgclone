@@ -126,12 +126,23 @@ def _fmt_psql_sql(sql):
     return sql
 
 
-def psql(sql, *, using, ignore_errors=False):
+def _kill_connections(database, *, using):
+    kill_connections_sql = f"""
+        SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity
+            WHERE pg_stat_activity.datname = '{database["NAME"]}' AND pid <> pg_backend_pid()
+    """
+    psql(kill_connections_sql, using=using)
+
+
+def psql(sql, *, using, ignore_errors=False, kill_connections=None):
     """Runs psql -f with properly formatted SQL.
 
     Ensures PGCLONE_STATEMENT_TIMEOUT and PGCLONE_LOCK_TIMEOUT are set
     if those parameters are defined.
     """
+    if kill_connections:
+        _kill_connections(kill_connections, using=using)
+
     db_url = url(conn(using=using))
     sql = _fmt_psql_sql(sql)
 
@@ -149,15 +160,7 @@ def psql(sql, *, using, ignore_errors=False):
         )
 
 
-def kill_connections(database, *, using):
-    kill_connections_sql = f"""
-        SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity
-            WHERE pg_stat_activity.datname = '{database["NAME"]}' AND pid <> pg_backend_pid()
-    """
-    psql(kill_connections_sql, using=using)
-
-
 def drop(database, *, using):
-    kill_connections(database, using=using)
+    _kill_connections(database, using=using)
     drop_sql = f'DROP DATABASE IF EXISTS "{database["NAME"]}"'
     psql(drop_sql, using=using)

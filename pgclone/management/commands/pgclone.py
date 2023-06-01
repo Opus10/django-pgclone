@@ -154,7 +154,7 @@ class RestoreCommand(BaseSubcommand):
             "--reversible",
             default=None,  # Use None so that configs/settings can be used as defaults
             action="store_true",
-            help="Keep current and previous database copies available for reversion.",
+            help="Keep pre/post restore database copies available for reversion.",
         )
         parser.add_argument(
             "-d",
@@ -185,11 +185,14 @@ class RestoreCommand(BaseSubcommand):
 
 class CopyCommand(BaseSubcommand):
     def add_arguments(self, parser):
-        parser.add_argument("dump_key", nargs="?", help="The local dump key to copy to.")
+        parser.add_argument(
+            "dump_key",
+            help="The database target in the format of a local dump key, e.g. ':db_backup'",
+        )
         parser.add_argument(
             "-d",
             "--database",
-            help="Restore to this database.",
+            help="Copy this database.",
         )
         parser.add_argument(
             "-c",

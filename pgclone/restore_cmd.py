@@ -32,14 +32,14 @@ def _set_search_path(database, *, using):
     db.psql(set_search_path_sql, using=using)
 
 
-def _local_restore(dump_key, *, temp_db, curr_db, prev_db, using):
+def _local_restore(dump_key, *, temp_db, post_db, pre_db, using):
     """
     Performs a restore using a local database
     """
-    if dump_key == ":current":
-        local_restore_db = curr_db
-    elif dump_key == ":previous":
-        local_restore_db = prev_db
+    if dump_key == ":post":
+        local_restore_db = post_db
+    elif dump_key == ":pre":
+        local_restore_db = pre_db
     else:
         local_restore_db = db.make(dump_key[1:], using=using)
 
@@ -54,10 +54,9 @@ def _local_restore(dump_key, *, temp_db, curr_db, prev_db, using):
     # is provided by the user
     if local_restore_db != temp_db:  # pragma: no branch
         db.drop(temp_db, using=using)
-        create_temp_sql = f"""
-            CREATE DATABASE "{temp_db["NAME"]}"
-            TEMPLATE "{local_restore_db["NAME"]}"
-        """
+        create_temp_sql = (
+            f'CREATE DATABASE "{temp_db["NAME"]}" WITH TEMPLATE "{local_restore_db["NAME"]}"'
+        )
         db.psql(create_temp_sql, using=using)
 
     _set_search_path(temp_db, using=using)
@@ -117,27 +116,35 @@ def _restore(*, dump_key, pre_swap_hooks, config, reversible, database, storage_
     # 1. Create the temp_db database to perform the restore without
     #    affecting the restore_db
     # 2. Call pg_restore on temp_db
-    # 3. Apply any pre_swap_hooks to temp_db
-    # 4. Terminate all connections on restore_db so that we
+    # 3. If using --reversible, create the post_db restore copy of temp_db
+    # 4. Apply any pre_swap_hooks to temp_db
+    # 5. Terminate all connections on restore_db so that we
     #    can swap in the temp_db
-    # 4. Rename restore_db to prev_db
-    # 5. Rename temp_db to restore_db
-    # 6. Delete prev_db
+    # 6. Rename restore_db to swap_db
+    # 7. Rename temp_db to restore_db
+    # 8. Delete swap_db and post/pre_db if not using --reversible OR
+    #    rename swap_db to pre_db if using --reversible
     #
     # Database variable names below reflect this process.
 
     restore_db = db.conf(using=database)
+    # The DB in which a restore happens behind the scenes. Pre-swap hooks
+    # are applied to it
     temp_db = db.make(restore_db["NAME"] + "__temp", using=database)
-    prev_db = db.make(restore_db["NAME"] + "__prev", using=database)
-    curr_db = db.make(restore_db["NAME"] + "__curr", using=database)
-    local_restore_db = None
+    # A temporary DB to use for the swap step. Helps us do a quick rename of
+    # DBs.
+    swap_db = db.make(restore_db["NAME"] + "__swap", using=database)
+    # These two DBs are only for reversible restores
+    pre_db = db.make(restore_db["NAME"] + "__pre", using=database)
+    post_db = db.make(restore_db["NAME"] + "__post", using=database)
+    is_local_restore = dump_key.startswith(":")
 
-    if dump_key.startswith(":"):
+    if is_local_restore:
         dump_key = _local_restore(
             dump_key,
             temp_db=temp_db,
-            curr_db=curr_db,
-            prev_db=prev_db,
+            post_db=post_db,
+            pre_db=pre_db,
             using=database,
         )
     else:
@@ -145,15 +152,15 @@ def _restore(*, dump_key, pre_swap_hooks, config, reversible, database, storage_
             dump_key, temp_db=temp_db, using=database, storage_location=storage_location
         )
 
-    # When in reversible mode, make a special __curr db snapshot.
-    # Avoid this if we are restoring the current db
-    if reversible and local_restore_db != curr_db:
-        logging.success_msg("Creating snapshot for reversible restore")
-        db.drop(curr_db, using=database)
-        create_current_db_sql = (
-            f'CREATE DATABASE "{curr_db["NAME"]}" WITH TEMPLATE "{temp_db["NAME"]}"'
+    # When in reversible mode, make a special __post db snapshot.
+    # Note that reversible mode is a noop for local restores.
+    if reversible and not is_local_restore:
+        logging.success_msg("Creating 'post' snapshot for reversible restore")
+        db.drop(post_db, using=database)
+        create_post_db_sql = (
+            f'CREATE DATABASE "{post_db["NAME"]}" WITH TEMPLATE "{temp_db["NAME"]}"'
         )
-        db.psql(create_current_db_sql, using=database)
+        db.psql(create_post_db_sql, using=database)
 
     # pre-swap hook step
     with db.route(temp_db):
@@ -163,21 +170,29 @@ def _restore(*, dump_key, pre_swap_hooks, config, reversible, database, storage_
 
     # swap step
     logging.success_msg("Swapping the restored copy with the primary database")
-    db.drop(prev_db, using=database)
-    db.kill_connections(restore_db, using=database)
-    alter_db_sql = f'ALTER DATABASE "{restore_db["NAME"]}" RENAME TO "{prev_db["NAME"]}"'
-    # There's a scenario where the default DB may not exist before running
+    db.drop(swap_db, using=database)
+    alter_db_sql = f'ALTER DATABASE "{restore_db["NAME"]}" RENAME TO "{swap_db["NAME"]}"'
+    # There's a scenario where the restore DB may not exist before running
     # this, so just ignore errors on this command
-    db.psql(alter_db_sql, ignore_errors=True, using=database)
+    db.psql(alter_db_sql, ignore_errors=True, using=database, kill_connections=restore_db)
 
-    db.kill_connections(temp_db, using=database)
     rename_sql = f'ALTER DATABASE "{temp_db["NAME"]}" RENAME TO "{restore_db["NAME"]}"'
-    db.psql(rename_sql, using=database)
+    db.psql(rename_sql, using=database, kill_connections=temp_db)
 
-    if not reversible:
-        logging.success_msg("Cleaning old pgclone resources")
-        db.drop(curr_db, using=database)
-        db.drop(prev_db, using=database)
+    # If we're doing a reversible remote restore, keep the swap DB around as the prev DB
+    if reversible and not is_local_restore:
+        logging.success_msg("Creating 'pre' snapshot for reversible restore")
+        db.drop(pre_db, using=database)
+        rename_sql = f'ALTER DATABASE "{swap_db["NAME"]}" RENAME TO "{pre_db["NAME"]}"'
+        db.psql(rename_sql, using=database, kill_connections=swap_db)
+    else:
+        logging.success_msg("Cleaning pgclone resources")
+        db.drop(swap_db, using=database)
+        if not reversible and not is_local_restore:
+            # If we did a non-reversible remote restore, remove any previous restore
+            # points from reversible restores
+            db.drop(post_db, using=database)
+            db.drop(pre_db, using=database)
 
     logging.success_msg(f'Successfully restored dump "{dump_key}" to database "{database}"')
 

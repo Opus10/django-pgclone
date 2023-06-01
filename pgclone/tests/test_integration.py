@@ -77,7 +77,7 @@ def test_simple_dump_ls_restore(tmpdir, capsys, settings):
 
 @freezegun.freeze_time("2020-07-01")
 @pytest.mark.django_db(transaction=True)
-def test_reversible_dump_ls_restore(tmpdir, capsys, settings, mocker):
+def test_reversible_dump_ls_restore(tmpdir, capsys, settings):
     """
     Tests a reversible dump, ls, and restore for local clones. Also verifes
     copy works locally
@@ -117,73 +117,73 @@ def test_reversible_dump_ls_restore(tmpdir, capsys, settings, mocker):
 
     call_command("pgclone", "ls", "--local")
     output = capsys.readouterr().out
-    assert f":{db_name}__curr" in output
-    assert f":{db_name}__prev" in output
+    assert f":{db_name}__post" in output
+    assert f":{db_name}__pre" in output
 
     ddf.G("auth.User")
     ddf.G("auth.User")
     assert User.objects.count() == 3
 
-    # Use the special "previous" and "current" aliases
-    # Restoring to the "current" will go back to the point at which
+    # Use the special "pre" and "post" aliases
+    # Restoring to the "post" will go back to the point at which
     # it was restored, which had exactly one user
-    call_command("pgclone", "restore", ":current", "--reversible")
+    call_command("pgclone", "restore", ":post")
     connection.connect()
     assert User.objects.count() == 1
 
-    # Going back to the "previous" takes us to the database before
-    # the restore happened, which had three users
-    call_command("pgclone", "restore", ":previous", "--reversible")
+    # Going back to the "pre" takes us to the database before
+    # the initial restore happened, which had three users.
+    # Note - the --reversible flag here is a noop
+    call_command("pgclone", "restore", ":pre", "--reversible")
     connection.connect()
-    assert User.objects.count() == 3
+    assert User.objects.count() == 2
 
-    # Going back to the "previous" again starts cycling through both
-    # copies of the database
-    call_command("pgclone", "restore", ":previous", "--reversible")
+    ddf.G("auth.User")
+    ddf.G("auth.User")
+    assert User.objects.count() == 4
+
+    # Going back to the "post" again should still work
+    call_command("pgclone", "restore", ":post")
     connection.connect()
     assert User.objects.count() == 1
 
     # Dont use the special alias and instead directly reference the
     # local copy
-    call_command("pgclone", "restore", f":{db_name}__prev")
+    call_command("pgclone", "restore", f":{db_name}__pre")
     connection.connect()
-    assert User.objects.count() == 3
+    assert User.objects.count() == 2
+
+    # Restore again without the reversible option
+    call_command("pgclone", "restore", "dev")
+    connection.connect()
 
     # Since we didn't restore with "reversible", there are no longer
-    # current and previous copies
+    # post and pre copies
     assert capsys.readouterr()
     with pytest.raises(SystemExit):
-        call_command("pgclone", "restore", ":previous")
+        call_command("pgclone", "restore", ":pre")
     assert capsys.readouterr().err.startswith("Local database")
 
     with pytest.raises(SystemExit):
-        call_command("pgclone", "restore", ":current")
+        call_command("pgclone", "restore", ":post")
     assert capsys.readouterr().err.startswith("Local database")
 
-    # Make a local copy and restore. By default, it uses the same name as
-    # the :current database to faciliate easy restoring
-    ddf.G("auth.User")
-    assert User.objects.count() == 4
-    call_command("pgclone", "copy")
+    # Make a reversible restore for testing local copies
+    call_command("pgclone", "restore", "dev", "--reversible")
     connection.connect()
-    ddf.G("auth.User")
-    assert User.objects.count() == 5
-    call_command("pgclone", "restore", ":current")
-    connection.connect()
-    assert User.objects.count() == 4
 
-    # Make a named copy and restore. Use both the reserved "previous" name and a custom name
-    call_command("pgclone", "copy", ":previous")
+    # Make a local copy and restore.
+    ddf.G("auth.User")
+    assert User.objects.count() == 2
+    call_command("pgclone", "copy", f":my_backup_{settings.DATABASES['default']['NAME']}")
     connection.connect()
     ddf.G("auth.User")
-    assert User.objects.count() == 5
-    call_command("pgclone", "copy", f":named_copy_{settings.DATABASES['default']['NAME']}")
+    assert User.objects.count() == 3
+    call_command("pgclone", "restore", f":my_backup_{settings.DATABASES['default']['NAME']}")
     connection.connect()
-    ddf.G("auth.User")
-    assert User.objects.count() == 6
-    call_command("pgclone", "restore", ":previous")
+    assert User.objects.count() == 2
+
+    # Make sure our reversible restore points weren't deleted just now
+    call_command("pgclone", "restore", ":post")
     connection.connect()
-    assert User.objects.count() == 4
-    call_command("pgclone", "restore", f":named_copy_{settings.DATABASES['default']['NAME']}")
-    connection.connect()
-    assert User.objects.count() == 5
+    assert User.objects.count() == 1
