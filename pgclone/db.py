@@ -2,6 +2,8 @@ import contextlib
 import copy
 import functools
 import shlex
+import tempfile
+import textwrap
 
 from django.conf import settings as django_settings
 from django.db import connections, DEFAULT_DB_ALIAS
@@ -109,21 +111,48 @@ def url(db_config):
     )
 
 
-def psql(sql, *, using, ignore_errors=False):
-    """Runs psql -c with properly formatted SQL"""
-    db_url = url(conn(using=using))
+def _fmt_psql_sql(sql):
+    """Formats SQL for psql execution"""
+    sql = textwrap.dedent(sql).strip()
+    if not sql.endswith(";"):  # For better debugging output
+        sql += ";"
 
-    # Format special SQL characters
-    sql = sql.replace("$", "\\$").replace("\n", " ").replace('"', '\\"').strip()
-    return run.shell(f'psql {db_url} -P pager=off -c "{sql};"', ignore_errors=ignore_errors)
+    if settings.statement_timeout() is not None:
+        sql = f"SET statement_timeout = {settings.statement_timeout()};\n{sql}"
+
+    if settings.lock_timeout() is not None:
+        sql = f"SET lock_timeout = {settings.lock_timeout()};\n{sql}"
+
+    return sql
+
+
+def psql(sql, *, using, ignore_errors=False):
+    """Runs psql -f with properly formatted SQL.
+
+    Ensures PGCLONE_STATEMENT_TIMEOUT and PGCLONE_LOCK_TIMEOUT are set
+    if those parameters are defined.
+    """
+    db_url = url(conn(using=using))
+    sql = _fmt_psql_sql(sql)
+
+    # psql -c will run all statements in one transaction, which causes errors when using
+    # setting overrides for some commands that cannot be executed in a transaction. In order
+    # to get around this, we use the -f option to read statements from a file. Executing them
+    # this way ensures that the statements are executed in the same session and no transaction
+    with tempfile.NamedTemporaryFile() as tmp_f:
+        tmp_f.write(sql.encode("utf-8"))
+        tmp_f.flush()
+
+        return run.shell(
+            f"psql {db_url} -o /dev/null -a -v ON_ERROR_STOP=1 -P pager=off -f {tmp_f.name}",
+            ignore_errors=ignore_errors,
+        )
 
 
 def kill_connections(database, *, using):
     kill_connections_sql = f"""
-        SELECT pg_terminate_backend(pg_stat_activity.pid)
-        FROM pg_stat_activity
-        WHERE pg_stat_activity.datname = '{database["NAME"]}'
-            AND pid <> pg_backend_pid()
+        SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity
+            WHERE pg_stat_activity.datname = '{database["NAME"]}' AND pid <> pg_backend_pid()
     """
     psql(kill_connections_sql, using=using)
 
