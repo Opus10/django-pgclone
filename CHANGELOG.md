@@ -1,5 +1,30 @@
 # Changelog
-## 2.6.0 (2023-05-31)
+## 3.0.0 (2023-06-01)
+### Api-Break
+  - Changed behavior of reversible restores and local copies [Wes Kendall, de428c1]
+
+    Using the ``--reversible`` option for ``pgclone restore`` is now only applicable to
+    database dumps and no longer has any effect when executed against a local database.
+    The aliases used by reversible restores have also changed from ``previous`` and
+    ``current`` to ``pre`` and ``post``.
+
+    In other words, if one uses ``--reversible`` during a ``pgclone restore`` of
+    a database dump, one can revert back to the version of data pre-restore using
+    ``pgclone restore :pre`` or the version of the data immediately after
+    the restore using ``pgclone restore :post``.
+
+    Unlike before, running ``pgclone restore :pre`` or ``pgclone restore :post`` has
+    no effect on the copies created when restoring a dump using ``--reversible``.
+    The ``:pre`` and ``:post`` aliases are only changed when a new reversible dump
+    is restored.
+
+    This same behavior applies to local copies too. ``pclone copy`` now requires
+    a target name in the format of a local dump key (``:db_name``), and the special
+    ``:pre`` and ``:post`` aliases cannot be used. Users can do
+    ``pgclone copy :my_backup`` and ``pgclone restore :my_backup`` without affecting
+    the special snapshots related to the last restore from a dump.
+
+## 2.6.0 (2023-06-01)
 ### Feature
   - Support overriding Postgres statement timeouts [Wes Kendall, 4ef38f4]
 
