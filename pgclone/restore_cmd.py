@@ -150,11 +150,9 @@ def _restore(*, dump_key, pre_swap_hooks, config, reversible, database, storage_
     if reversible and local_restore_db != curr_db:
         logging.success_msg("Creating snapshot for reversible restore")
         db.drop(curr_db, using=database)
-        create_current_db_sql = f"""
-            CREATE DATABASE "{curr_db['NAME']}"
-             WITH TEMPLATE
-            "{temp_db['NAME']}"
-        """
+        create_current_db_sql = (
+            f'CREATE DATABASE "{curr_db["NAME"]}" WITH TEMPLATE "{temp_db["NAME"]}"'
+        )
         db.psql(create_current_db_sql, using=database)
 
     # pre-swap hook step
@@ -167,19 +165,13 @@ def _restore(*, dump_key, pre_swap_hooks, config, reversible, database, storage_
     logging.success_msg("Swapping the restored copy with the primary database")
     db.drop(prev_db, using=database)
     db.kill_connections(restore_db, using=database)
-    alter_db_sql = f"""
-        ALTER DATABASE "{restore_db['NAME']}" RENAME TO
-        "{prev_db['NAME']}"
-    """
+    alter_db_sql = f'ALTER DATABASE "{restore_db["NAME"]}" RENAME TO "{prev_db["NAME"]}"'
     # There's a scenario where the default DB may not exist before running
     # this, so just ignore errors on this command
     db.psql(alter_db_sql, ignore_errors=True, using=database)
 
     db.kill_connections(temp_db, using=database)
-    rename_sql = f"""
-        ALTER DATABASE "{temp_db["NAME"]}"
-        RENAME TO "{restore_db["NAME"]}"
-    """
+    rename_sql = f'ALTER DATABASE "{temp_db["NAME"]}" RENAME TO "{restore_db["NAME"]}"'
     db.psql(rename_sql, using=database)
 
     if not reversible:

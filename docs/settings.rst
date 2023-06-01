@@ -169,3 +169,21 @@ This helps preserve backwards compatibility with version 1. Note that
 keys.
 
 **Default** ``True``
+
+PGCLONE_STATEMENT_TIMEOUT
+-------------------------
+
+The ``statement_timeout`` Postgres setting to use when running core ``pgclone``
+commands via ``psql``. For example, the statement timeout will apply to
+any ``CREATE DATABASE``, ``ALTER DATABASE``, or ``DROP DATABASE`` statements,
+along with statements that terminate blocking queries.
+
+**Default** ``None``
+
+PGCLONE_LOCK_TIMEOUT
+--------------------
+
+The ``lock_timeout`` Postgres setting to use when running core ``pgclone``
+commands via ``psql``. Similar to ``PGCLONE_STATEMENT_TIMEOUT``.
+
+**Default** ``None``

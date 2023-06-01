@@ -7,6 +7,14 @@ from django.db import DEFAULT_DB_ALIAS
 from pgclone import exceptions
 
 
+def statement_timeout():
+    return getattr(settings, "PGCLONE_STATEMENT_TIMEOUT", None)
+
+
+def lock_timeout():
+    return getattr(settings, "PGCLONE_LOCK_TIMEOUT", None)
+
+
 def s3_config():
     return getattr(settings, "PGCLONE_S3_CONFIG", {})
 

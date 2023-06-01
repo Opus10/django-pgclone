@@ -28,11 +28,7 @@ def _copy(*, dump_key, database):
 
     logging.success_msg("Creating copy")
     db.drop(target_db, using=database)
-    copy_db_sql = f"""
-        CREATE DATABASE "{target_db['NAME']}"
-            WITH TEMPLATE
-        "{source_db['NAME']}"
-    """
+    copy_db_sql = f'CREATE DATABASE "{target_db["NAME"]}" WITH TEMPLATE "{source_db["NAME"]}"'
     db.kill_connections(source_db, using=database)
     db.psql(copy_db_sql, using=database)
 
