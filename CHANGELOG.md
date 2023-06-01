@@ -1,4 +1,15 @@
 # Changelog
+## 2.6.0 (2023-05-31)
+### Feature
+  - Support overriding Postgres statement timeouts [Wes Kendall, 4ef38f4]
+
+    Use ``settings.PGCLONE_STATEMENT_TIMEOUT`` to override Postgres's
+    ``statement_timeout`` setting when running core ``pgclone`` SQL operations such
+    as ``CREATE DATABASE``.
+
+    You can also use ``settings.PGCLONE_LOCK_TIMEOUT`` to override Postgres's
+    ``lock_timeout`` setting.
+
 ## 2.5.0 (2023-05-23)
 ### Feature
   - Add ``pgclone copy`` command. [Wes Kendall, 6ad17b9]
