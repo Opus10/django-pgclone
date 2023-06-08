@@ -41,6 +41,11 @@ When listing, use an optional prefix. Restoring
 supports the same interface, using the latest key that matches the
 prefix.
 
+Compatibility
+=============
+
+``django-pgclone`` is compatible with Python 3.7 - 3.11, Django 3.2 - 4.2, Psycopg 2 - 3 and Postgres 12 - 15.
+
 Documentation
 =============
 
