@@ -1,4 +1,10 @@
 # Changelog
+## 3.1.0 (2023-06-08)
+### Feature
+  - Added Python 3.11, Django 4.2, and Psycopg 3 support [Wesley Kendall, d1cf98c]
+
+    Adds Python 3.11, Django 4.2, and Psycopg 3 support along with tests for multiple Postgres versions. Drops support for Django 2.2.
+
 ## 3.0.0 (2023-06-01)
 ### Api-Break
   - Changed behavior of reversible restores and local copies [Wes Kendall, de428c1]
