@@ -1,3 +1,5 @@
+from typing import Union
+
 from pgclone import db, exceptions, logging, options, settings
 
 
@@ -33,23 +35,24 @@ def _copy(*, dump_key, database):
     return dump_key
 
 
-def copy(dump_key, *, database=None, config=None):
+def copy(
+    dump_key: str, *, database: Union[str, None] = None, config: Union[str, None] = None
+) -> str:
     """
-    Copies a database using ``CREATE DATABASE <dump_key> TEMPLATE <database>``.
+    Copies a database using `CREATE DATABASE <dump_key> TEMPLATE <database>`.
 
-    Note that we use dump keys with the same syntax that ``dump`` and ``restore``
-    commands take. Since ``copy`` only works with local database copies, this
-    means the dump keys are always the database name prefixed with ``:``.
+    Note that we use dump keys with the same syntax that `dump` and `restore`
+    commands take. Since `copy` only works with local database copies, this
+    means the dump keys are always the database name prefixed with `:`.
 
     Args:
-        dump_key (str): A name to use for the copy. Must be prefixed
-            with ``:`` and only consist of valid database name characters.
-        database (str, default=None): The database to copy.
-        config (str, default=None): The configuration name
-            from ``settings.PGCLONE_CONFIGS``.
+        dump_key: A name to use for the copy. Must be prefixed with `:` and only
+            consist of valid database name characters.
+        database: The database to copy.
+        config: The configuration name from `settings.PGCLONE_CONFIGS`.
 
     Returns:
-        str: The dump key that was copied.
+        The dump key that was copied.
     """
     opts = options.get(
         dump_key=dump_key,

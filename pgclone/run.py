@@ -47,7 +47,7 @@ def management(cmd, *cmd_args, **cmd_kwargs):
         # If an exception happened, be sure to print off any stdout/stderr
         # leading up the error and log the exception.
         logger.info(output.getvalue())
-        logger.exception(f'An exception occurred during "manage.py {cmd}"')
+        logger.exception('An exception occurred during "manage.py %s"', cmd)
         raise
     else:
         logger.info(output.getvalue())

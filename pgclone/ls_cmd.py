@@ -1,5 +1,6 @@
 import re
 import subprocess
+from typing import List, Union
 
 from pgclone import db, exceptions, options, settings, storage
 
@@ -62,35 +63,31 @@ def _ls(*, dump_key, instances, databases, configs, local, database, storage_loc
 
 
 def ls(
-    dump_key=None,
+    dump_key: Union[str, None] = None,
     *,
-    instances=False,
-    databases=False,
-    configs=False,
-    local=False,
-    database=None,
-    storage_location=None,
-    config=None,
-):
+    instances: bool = False,
+    databases: bool = False,
+    configs: bool = False,
+    local: bool = False,
+    database: Union[str, None] = None,
+    storage_location: Union[str, None] = None,
+    config: Union[str, None] = None,
+) -> List[str]:
     """
     Lists dump keys.
 
     Args:
-        dump_key (str, default=None): Filter by this dump key prefix.
-        instances (boolean, default=False): Lists only the unique instances associated
-            with the dump keys.
-        databases (boolean, default=False): Lists only the unique databases associated
-            with the dump keys.
-        configs (boolean, default=False): Lists only the unique configs associated
-            with the dump keys.
-        local (bool, default=False): Only list local restore keys.
-        database (str, default=None): The database to restore.
-        storage_location (str, default=None): The storage location to use for the restore.
-        config (str, default=None): The configuration name
-            from ``settings.PGCLONE_CONFIGS``.
+        dump_key: Filter by this dump key prefix.
+        instances: Lists only the unique instances associated with the dump keys.
+        databases: Lists only the unique databases associated with the dump keys.
+        configs: Lists only the unique configs associated with the dump keys.
+        local: Only list local restore keys.
+        database: The database to restore.
+        storage_location: The storage location to use for the restore.
+        config: The configuration name from `settings.PGCLONE_CONFIGS`.
 
     Returns:
-        List[str]: The list of dump keys.
+        The list of dump keys.
     """
     opts = options.get(
         dump_key=dump_key, config=config, database=database, storage_location=storage_location

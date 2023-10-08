@@ -6,7 +6,7 @@ import tempfile
 import textwrap
 
 from django.conf import settings as django_settings
-from django.db import connections, DEFAULT_DB_ALIAS
+from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.utils import load_backend
 
 from pgclone import exceptions, run, settings
