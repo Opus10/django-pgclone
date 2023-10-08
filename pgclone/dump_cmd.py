@@ -1,11 +1,11 @@
 import datetime as dt
 import os
 import re
+from typing import List, Union
 
 from django.apps import apps
 
 from pgclone import db, exceptions, logging, options, run, settings, storage
-
 
 DT_FORMAT = "%Y-%m-%d-%H-%M-%S-%f"
 
@@ -59,28 +59,25 @@ def _dump(*, exclude, config, pre_dump_hooks, instance, database, storage_locati
 
 def dump(
     *,
-    exclude=None,
-    pre_dump_hooks=None,
-    instance=None,
-    database=None,
-    storage_location=None,
-    config=None,
-):
+    exclude: Union[List[str], None] = None,
+    pre_dump_hooks: Union[List[str], None] = None,
+    instance: Union[str, None] = None,
+    database: Union[str, None] = None,
+    storage_location: Union[str, None] = None,
+    config: Union[str, None] = None,
+) -> str:
     """Dumps a database.
 
     Args:
-        exclude (List[str], default=None): The models to exclude when
-            dumping the utils.
-        pre_dump_hooks (List[str], default=None): A list of management
-            command names to run before dumping the utils.
-        instance (str, default=None): The instance name to use in the dump key.
-        database (str, default=None): The database to dump.
-        storage_location (str, default=None): The storage location to store dumps.
-        config (str, default=None): The configuration name
-            from ``settings.PGCLONE_CONFIGS``.
+        exclude: The models to exclude when dumping the utils.
+        pre_dump_hooks: A list of management command names to run before dumping the utils.
+        instance: The instance name to use in the dump key.
+        database: The database to dump.
+        storage_location: The storage location to store dumps.
+        config: The configuration name from `settings.PGCLONE_CONFIGS`.
 
     Returns:
-        str: The dump key associated with the database dump.
+        The dump key associated with the database dump.
     """
     opts = options.get(
         exclude=exclude,

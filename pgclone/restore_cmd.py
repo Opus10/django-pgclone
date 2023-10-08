@@ -1,4 +1,5 @@
 import os
+from typing import List, Union
 
 from django.db import connections
 
@@ -200,31 +201,28 @@ def _restore(*, dump_key, pre_swap_hooks, config, reversible, database, storage_
 
 
 def restore(
-    dump_key=None,
+    dump_key: Union[str, None] = None,
     *,
-    pre_swap_hooks=None,
-    reversible=None,
-    database=None,
-    storage_location=None,
-    config=None,
-):
+    pre_swap_hooks: Union[List[str], None] = None,
+    reversible: Union[bool, None] = None,
+    database: Union[str, None] = None,
+    storage_location: Union[str, None] = None,
+    config: Union[str, None] = None,
+) -> str:
     """
     Restores a database dump.
 
     Args:
-        dump_key (str, default=None): Restores the specific dump key or the most
-            recent dump matching the prefix.
-        pre_swap_hooks (List[str], default=None): The list of pre-swap hooks to
-            run before swapping the temp restore database with the
-            main utils. The strings are management command names.
-        reversible (bool, default=None): True if the dump can be reversed.
-        database (str, default=None): The database to restore.
-        storage_location (str, default=None): The storage location to use for the restore.
-        config (str, default=None): The configuration name
-            from ``settings.PGCLONE_CONFIGS``.
+        dump_key: Restores the specific dump key or the most recent dump matching the prefix.
+        pre_swap_hooks: The list of pre-swap hooks to run before swapping the temp restore
+            database with the main utils. The strings are management command names.
+        reversible: True if the dump can be reversed.
+        database: The database to restore.
+        storage_location: The storage location to use for the restore.
+        config: The configuration name from `settings.PGCLONE_CONFIGS`.
 
     Returns:
-        str: The dump key that was restored.
+        The dump key that was restored.
     """
     opts = options.get(
         dump_key=dump_key,
