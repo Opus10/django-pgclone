@@ -1,12 +1,28 @@
 # Changelog
-## 3.1.0 (2023-06-08)
+
+## 3.2.0 (2023-10-08)
+
 ### Feature
+
+  - Add Python3.12 support and use Mkdocs for documentation [Wesley Kendall, 97e7d99]
+
+    Python 3.12 and Postgres 16 are supported now, along with having revamped docs using Mkdocs
+    and the Material theme.
+
+    Python 3.7 support was dropped.
+
+## 3.1.0 (2023-06-08)
+
+### Feature
+
   - Added Python 3.11, Django 4.2, and Psycopg 3 support [Wesley Kendall, d1cf98c]
 
     Adds Python 3.11, Django 4.2, and Psycopg 3 support along with tests for multiple Postgres versions. Drops support for Django 2.2.
 
 ## 3.0.0 (2023-06-01)
+
 ### Api-Break
+
   - Changed behavior of reversible restores and local copies [Wes Kendall, de428c1]
 
     Using the ``--reversible`` option for ``pgclone restore`` is now only applicable to
@@ -31,7 +47,9 @@
     the special snapshots related to the last restore from a dump.
 
 ## 2.6.0 (2023-06-01)
+
 ### Feature
+
   - Support overriding Postgres statement timeouts [Wes Kendall, 4ef38f4]
 
     Use ``settings.PGCLONE_STATEMENT_TIMEOUT`` to override Postgres's
@@ -42,7 +60,9 @@
     ``lock_timeout`` setting.
 
 ## 2.5.0 (2023-05-23)
+
 ### Feature
+
   - Add ``pgclone copy`` command. [Wes Kendall, 6ad17b9]
 
     The ``pgclone copy`` command is a shortcut for running ``CREATE DATABASE <target> TEMPLATE <source>``
@@ -57,47 +77,65 @@
   - Add ``settings.PGCLONE_ALLOW_DUMP`` setting. [Wes Kendall, 82c90f4]
 
     Set this setting to ``False`` to prevent the ability to run ``pgclone dump``.
+
 ### Trivial
+
   - Add ability to specify endpoint url [Jack Linke, 2e1e5f5]
 
 ## 2.4.0 (2023-04-28)
+
 ### Bug
+
   - Quote database connection strings [Wesley Kendall, 31fd3cf]
 
     Database connection strings are properly quoted to avoid issues when there
     are special characters.
+
 ### Trivial
+
   - Updated developer utilities with the latest Django library template [Wesley Kendall, 2508920]
 
 ## 2.3.3 (2022-09-03)
+
 ### Trivial
+
   - Implemented a more robust routing method for pre-swap hooks [Wes Kendall, 8f34c40]
 
 ## 2.3.2 (2022-08-27)
+
 ### Trivial
+
   - Local development enhancements [Wes Kendall, 5d62570]
   - Test against Django 4.1 and other CI improvements [Wes Kendall, c11c848]
 
 ## 2.3.1 (2022-08-25)
+
 ### Trivial
+
   - Don't close original connection during routing [Wes Kendall, 93e5c03]
 
 ## 2.3.0 (2022-08-25)
+
 ### Bug
+
   - Fix issue routing connections during restore [Wes Kendall, 2ab5552]
 
     An issue was fixed that prevented routing hooks during restores from
     functioning properly.
 
 ## 2.2.0 (2022-08-25)
+
 ### Bug
+
   - Restore command properly overrides storage location [Wes Kendall, 15acd90]
 
     The restore command now properly passes through custom storage locations from the
     command line.
 
 ## 2.1.0 (2022-08-24)
+
 ### Bug
+
   - Allow "reversible" to proliferate through settings and configs. [Wes Kendall, bda7b69]
 
     The ``pgclone restore`` command was setting ``reversible`` to
@@ -105,12 +143,16 @@
     has been fixed.
 
 ## 2.0.1 (2022-08-24)
+
 ### Trivial
+
   - Update with latest Django template [Wes Kendall, c46d7e4]
   - Fix ReadTheDocs builds [Wes Kendall, 7c74338]
 
 ## 2.0.0 (2022-08-24)
+
 ### Api-Break
+
   - Upgrade configuration hierarchy, add multi-db support, and change dump key format [Wes Kendall, 5edeeb8]
 
     ``django-pgclone`` has ``settings.PGCLONE_CONFIGS`` to support re-usable command
@@ -125,7 +167,9 @@
     the docs.
 
 ## 1.1.0 (2022-08-21)
+
 ### Feature
+
   - Removed dependency on ``django-pgconnection`` [Wes Kendall, 5047031]
 
     The routing functionality of ``django-pgconnection`` was replaced by
@@ -135,31 +179,42 @@
     ``django-pgconnection``.
 
 ## 1.0.5 (2022-08-20)
+
 ### Trivial
+
   - Updated with latest Django template [Wes Kendall, 5ab9ddd]
 
 ## 1.0.4 (2022-08-20)
+
 ### Trivial
+
   - Fix release note rendering and don't package tests [Wes Kendall, 5621de7]
 
 ## 1.0.3 (2022-07-31)
+
 ### Trivial
+
   - Updated with latest Django template, fixing doc builds [Wes Kendall, 32a5eea]
 
 ## 1.0.2 (2021-06-15)
+
 ### Trivial
+
   - Updated to latest Django template [Wes Kendall, cf4deaf]
 
 ## 1.0.1 (2020-06-28)
+
 ### Trivial
+
   - Fixed minor documentation typos [Wes Kendall, 68cb863]
 
 ## 1.0.0 (2020-06-28)
+
 ### Api-Break
+
   - Initial release of django-pgclone [Wes Kendall, b8419ce]
 
     ``django-pgclone`` provides management commands for dumping and restoring
     Postgres databases. Users can configure local or S3 storage backends,
     and users may also configure hooks and other processes that happen during
     the dump/restore process.
-
