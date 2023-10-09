@@ -10,7 +10,7 @@ Set up your development environment with:
     cd django-pgclone
     make docker-setup
 
-`make docker-setup` will set up a development environment managed by Docker. Install docker [here](https://www.docker.com/get-started>) and be sure it is running when executing any of the commands below.
+`make docker-setup` will set up a development environment managed by Docker. Install docker [here](https://www.docker.com/get-started) and be sure it is running when executing any of the commands below.
 
 If you prefer a native development environment, `make conda-setup` will set up a development environment managed by [Conda](https://conda.io). The database must be ran manually.
 
@@ -34,7 +34,7 @@ If your code fails the linter checks, fix common errors with:
 
 ## Committing
 
-This project uses [git-tidy](<https://github.com/Opus10/git-tidy) to produce structured commits with git trailers. Information from commit messages is used to generate release notes and bump the version properly.
+This project uses [git-tidy](https://github.com/Opus10/git-tidy) to produce structured commits with git trailers. Information from commit messages is used to generate release notes and bump the version properly.
 
 To do a structured commit with `git-tidy`, do:
 
