@@ -20,7 +20,7 @@ def shell(cmd, ignore_errors=False, env=None):
         shell=True,
         stderr=subprocess.STDOUT,
         stdout=subprocess.PIPE,
-        env=dict(os.environ, **env),
+        env=dict(os.environ, **{k: v for k, v in env.items() if v is not None}),
     )
     for line in iter(process.stdout.readline, b""):
         logger.info(line.decode("utf-8").rstrip())

@@ -4,6 +4,7 @@ import functools
 import shlex
 import tempfile
 import textwrap
+import urllib.parse
 
 from django.conf import settings as django_settings
 from django.db import DEFAULT_DB_ALIAS, connections
@@ -105,10 +106,12 @@ def conn(*, using):
 
 def url(db_config):
     """Convert a database dictionary config to a url"""
-    return shlex.quote(
-        f'postgresql://{db_config["USER"]}:{db_config["PASSWORD"]}'
-        f'@{db_config["HOST"]}:{db_config["PORT"]}/{db_config["NAME"]}'
-    )
+    user = urllib.parse.quote(db_config["USER"])
+    password = urllib.parse.quote(db_config["PASSWORD"])
+    host = urllib.parse.quote(db_config["HOST"])
+    port = urllib.parse.quote(str(db_config["PORT"]))
+    name = urllib.parse.quote(db_config["NAME"])
+    return shlex.quote(f"postgresql://{user}:{password}@{host}:{port}/{name}")
 
 
 def _fmt_psql_sql(sql):
