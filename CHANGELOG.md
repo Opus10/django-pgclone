@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.4.0 (2023-12-05)
+
+### Bug
+
+  - Fix issue quoting URLs [Wesley Kendall, ace6561]
+
+    Ensure that URLs are percent-encoded when running psql commands.
+
 ## 3.3.0 (2023-11-26)
 
 ### Feature
