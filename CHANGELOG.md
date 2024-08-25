@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.5.0 (2024-08-25)
+
+#### Changes
+
+  - Django 5.1 compatibility, dropped Django 3.2 / Postgres 12 support by [@wesleykendall](https://github.com/wesleykendall) in [#34](https://github.com/Opus10/django-pgclone/pull/34).
+
 ## 3.4.1 (2024-04-06)
 
 #### Trivial
