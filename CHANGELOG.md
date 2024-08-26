@@ -1,14 +1,20 @@
 # Changelog
 
+## 3.5.0 (2024-08-25)
+
+#### Changes
+
+  - Django 5.1 compatibility, dropped Django 3.2 / Postgres 12 support by [@wesleykendall](https://github.com/wesleykendall) in [#34](https://github.com/Opus10/django-pgclone/pull/34).
+
 ## 3.4.1 (2024-04-06)
 
-### Trivial
+#### Trivial
 
   - Fix ReadTheDocs builds. [Wesley Kendall, d5eeaed]
 
 ## 3.4.0 (2023-12-06)
 
-### Bug
+#### Bug
 
   - Fix issue quoting URLs [Wesley Kendall, ace6561]
 
@@ -16,7 +22,7 @@
 
 ## 3.3.0 (2023-11-26)
 
-### Feature
+#### Feature
 
   - Django 5.0 compatibility [Wesley Kendall, cd279dd]
 
@@ -24,13 +30,13 @@
 
 ## 3.2.1 (2023-10-09)
 
-### Trivial
+#### Trivial
 
   - Added Opus10 branding to docs [Wesley Kendall, ba4621f]
 
 ## 3.2.0 (2023-10-08)
 
-### Feature
+#### Feature
 
   - Add Python3.12 support and use Mkdocs for documentation [Wesley Kendall, 97e7d99]
 
@@ -41,7 +47,7 @@
 
 ## 3.1.0 (2023-06-08)
 
-### Feature
+#### Feature
 
   - Added Python 3.11, Django 4.2, and Psycopg 3 support [Wesley Kendall, d1cf98c]
 
@@ -49,7 +55,7 @@
 
 ## 3.0.0 (2023-06-01)
 
-### Api-Break
+#### Api-Break
 
   - Changed behavior of reversible restores and local copies [Wes Kendall, de428c1]
 
@@ -76,7 +82,7 @@
 
 ## 2.6.0 (2023-06-01)
 
-### Feature
+#### Feature
 
   - Support overriding Postgres statement timeouts [Wes Kendall, 4ef38f4]
 
@@ -89,7 +95,7 @@
 
 ## 2.5.0 (2023-05-23)
 
-### Feature
+#### Feature
 
   - Add ``pgclone copy`` command. [Wes Kendall, 6ad17b9]
 
@@ -106,45 +112,45 @@
 
     Set this setting to ``False`` to prevent the ability to run ``pgclone dump``.
 
-### Trivial
+#### Trivial
 
   - Add ability to specify endpoint url [Jack Linke, 2e1e5f5]
 
 ## 2.4.0 (2023-04-28)
 
-### Bug
+#### Bug
 
   - Quote database connection strings [Wesley Kendall, 31fd3cf]
 
     Database connection strings are properly quoted to avoid issues when there
     are special characters.
 
-### Trivial
+#### Trivial
 
   - Updated developer utilities with the latest Django library template [Wesley Kendall, 2508920]
 
 ## 2.3.3 (2022-09-03)
 
-### Trivial
+#### Trivial
 
   - Implemented a more robust routing method for pre-swap hooks [Wes Kendall, 8f34c40]
 
 ## 2.3.2 (2022-08-27)
 
-### Trivial
+#### Trivial
 
   - Local development enhancements [Wes Kendall, 5d62570]
   - Test against Django 4.1 and other CI improvements [Wes Kendall, c11c848]
 
 ## 2.3.1 (2022-08-25)
 
-### Trivial
+#### Trivial
 
   - Don't close original connection during routing [Wes Kendall, 93e5c03]
 
 ## 2.3.0 (2022-08-25)
 
-### Bug
+#### Bug
 
   - Fix issue routing connections during restore [Wes Kendall, 2ab5552]
 
@@ -153,7 +159,7 @@
 
 ## 2.2.0 (2022-08-25)
 
-### Bug
+#### Bug
 
   - Restore command properly overrides storage location [Wes Kendall, 15acd90]
 
@@ -162,7 +168,7 @@
 
 ## 2.1.0 (2022-08-24)
 
-### Bug
+#### Bug
 
   - Allow "reversible" to proliferate through settings and configs. [Wes Kendall, bda7b69]
 
@@ -172,14 +178,14 @@
 
 ## 2.0.1 (2022-08-24)
 
-### Trivial
+#### Trivial
 
   - Update with latest Django template [Wes Kendall, c46d7e4]
   - Fix ReadTheDocs builds [Wes Kendall, 7c74338]
 
 ## 2.0.0 (2022-08-24)
 
-### Api-Break
+#### Api-Break
 
   - Upgrade configuration hierarchy, add multi-db support, and change dump key format [Wes Kendall, 5edeeb8]
 
@@ -196,7 +202,7 @@
 
 ## 1.1.0 (2022-08-21)
 
-### Feature
+#### Feature
 
   - Removed dependency on ``django-pgconnection`` [Wes Kendall, 5047031]
 
@@ -208,37 +214,37 @@
 
 ## 1.0.5 (2022-08-20)
 
-### Trivial
+#### Trivial
 
   - Updated with latest Django template [Wes Kendall, 5ab9ddd]
 
 ## 1.0.4 (2022-08-20)
 
-### Trivial
+#### Trivial
 
   - Fix release note rendering and don't package tests [Wes Kendall, 5621de7]
 
 ## 1.0.3 (2022-07-31)
 
-### Trivial
+#### Trivial
 
   - Updated with latest Django template, fixing doc builds [Wes Kendall, 32a5eea]
 
 ## 1.0.2 (2021-06-15)
 
-### Trivial
+#### Trivial
 
   - Updated to latest Django template [Wes Kendall, cf4deaf]
 
 ## 1.0.1 (2020-06-28)
 
-### Trivial
+#### Trivial
 
   - Fixed minor documentation typos [Wes Kendall, 68cb863]
 
 ## 1.0.0 (2020-06-28)
 
-### Api-Break
+#### Api-Break
 
   - Initial release of django-pgclone [Wes Kendall, b8419ce]
 
