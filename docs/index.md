@@ -28,7 +28,7 @@ When listing, use an optional prefix. Restoring supports the same interface, usi
 
 ## Compatibility
 
-`django-pgclone` is compatible with Python 3.8 - 3.12, Django 4.2 - 5.1, Psycopg 2 - 3, and Postgres 13 - 16.
+`django-pgclone` is compatible with Python 3.9 - 3.13, Django 4.2 - 5.1, Psycopg 2 - 3, and Postgres 13 - 17.
 
 ## Next steps
 
