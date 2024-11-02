@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.6.0 (2024-11-01)
+
+#### Changes
+
+  - Added Python 3.13 support, dropped Python 3.8. Added Postgres17 support by [@wesleykendall](https://github.com/wesleykendall) in [#35](https://github.com/Opus10/django-pgclone/pull/35).
+
 ## 3.5.0 (2024-08-25)
 
 #### Changes
